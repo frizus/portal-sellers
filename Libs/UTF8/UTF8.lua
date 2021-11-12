@@ -315,3 +315,96 @@ end
 if not string.utf8reverse then
 	string.utf8reverse = utf8reverse
 end
+
+local readerMethods = {
+	eof = function(self)
+		return self.position > self.length
+	end,
+
+	get = function(self, delimiters)
+		local charBytesLen, char, isDelimiter, buffer, prevBackslash = nil, nil, nil, "", false
+		while not self:eof() do
+			charBytesLen = utf8charbytes(self.text, self.position)
+			char = strsub(self.text, self.position, self.position + charBytesLen - 1)
+
+			isDelimiter = false
+			for _, delimiter in pairs(delimiters) do
+				if char == delimiter then
+					isDelimiter = true
+					break
+				end
+			end
+
+			if not isDelimiter then
+				self.position = self.position + charBytesLen
+				if char == "\\" then
+					if prevBackslash then
+						prevBackslash = false
+						buffer = buffer .. char
+					elseif self:eof() then
+						buffer = buffer .. char
+					else
+						prevBackslash = true
+					end
+				else
+					if prevBackslash then
+						prevBackslash = false
+						buffer = buffer .. "\\"
+					end
+					buffer = buffer .. char
+				end
+			else
+				if prevBackslash then
+					self.position = self.position + charBytesLen
+					prevBackslash = false
+					buffer = buffer .. char
+				else
+					break
+				end
+			end
+		end
+
+		return buffer
+	end,
+
+	peek = function(self)
+		if self:eof() then return end
+		local charBytesLen = utf8charbytes(self.text, self.position)
+		return strsub(self.text, self.position, self.position + charBytesLen - 1)
+	end,
+
+	ignore = function(self, length)
+		if self:eof() then return end
+		local i = 1
+		while i <= length do
+			self.position = self.position + utf8charbytes(self.text, self.position)
+			i = i + 1
+		end
+	end,
+
+	construct = function(self, s)
+		if type(s) ~= "string" then
+			error("bad argument #1 to 'utf8reader:construct' (string expected, got ".. type(s).. ")")
+		end
+
+		self.text = s
+		self.position = 1
+		self.length = strlen(self.text)
+	end,
+}
+
+local function utf8reader(s)
+	-- argument checking
+	if type(s) ~= "string" then
+		error("bad argument #1 to 'utf8reader' (string expected, got ".. type(s).. ")")
+	end
+
+	local reader = readerMethods
+	reader:construct(s)
+
+	return reader
+end
+
+if not string.reader then
+	string.reader = utf8reader
+end

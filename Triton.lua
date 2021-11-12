@@ -6,28 +6,53 @@ local AceConfigRegistry = LibStub("AceConfigRegistry-3.0")
 local L = LibStub("AceLocale-3.0"):GetLocale(addonName)
 
 function addon:OnInitialize()
-	addon.db = AceDB:New(addonName .. "DB", addon.DB.defaults, true)
-	addon.param = addon.db.global
-	addon.DB:ConvertOldParameters()
+	--addon.db = AceDB:New(addonName .. "DB", addon.DB.defaults, true)
+	--addon.param = addon.db.global
+	--addon.DB:ConvertOldParameters()
 end
 
 -- AceConfigRegistry-3.0 валидация
 function addon:OnEnable()
-	AceConfigRegistry:RegisterOptionsTable(addonName, addon.BlizOptions.GetOptions)
-	AceConfigDialog:AddToBlizOptions(addonName, GetAddOnMetadata(addonName, "Title"))
+	--AceConfigRegistry:RegisterOptionsTable(addonName, addon.BlizOptions.GetOptions)
+	--AceConfigDialog:AddToBlizOptions(addonName, GetAddOnMetadata(addonName, "Title"))
 
-	addon:RegisterChatCommand("triton", addon.modules.Monitoring.Show)
-	addon:RegisterEvent("PLAYER_LOGOUT", addon.DB.BeforeLogout)
+	--addon:RegisterChatCommand("triton", addon.modules.Monitoring.Show)
+	--addon:RegisterEvent("PLAYER_LOGOUT", addon.DB.BeforeLogout)
 
 	print(string.format(L["welcome_message"], addonName, GetAddOnMetadata(addonName, "Version")))
 
-	if addon.db.global.interfaceTrackingPanelVisible then
-		addon.modules.Monitoring:Create()
+	self:RegisterEvent("CHAT_MSG_WHISPER", function(self, text, playerName, languageName, channelName, playerName2, specialFlags, zoneChannelID, channelIndex, channelBaseName, unused, lineID, guid, bnSenderID, isMobile, isSubtitle, hideSenderInLetterbox, supressRaidIcons)
+		tprint(addon.Keywords:Parse(text))
+	end)
+
+	self:RegisterChatCommand("triton", function()
+
+	end)
+
+	--if addon.db.global.interfaceTrackingPanelVisible then
+	--addon.modules.Monitoring:Create()
+	--end
+end
+
+-- Print contents of `tbl`, with indentation.
+-- `indent` sets the initial level of indentation.
+function tprint (tbl, indent)
+	if not indent then indent = 0 end
+	for k, v in pairs(tbl) do
+		formatting = string.rep("  ", indent) .. k .. ": "
+		if type(v) == "table" then
+			print(formatting)
+			tprint(v, indent+1)
+		elseif type(v) == 'boolean' then
+			print(formatting .. tostring(v))
+		else
+			print(formatting .. v)
+		end
 	end
 end
 
 function addon:OnDisable()
-	addon:TrackingHooks(false)
+	--addon:TrackingHooks(false)
 end
 
 function addon:TrackingHooks(enable)

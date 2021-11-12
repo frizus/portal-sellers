@@ -23,5 +23,6 @@ Libs\UTF8\UTF8.xml
 Locales\ruRU.lua
 
 Triton.lua
+Keywords.lua
 
 ##EOF

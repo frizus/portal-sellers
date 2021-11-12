@@ -11,5 +11,5 @@
 ## X-License: BSD License
 ## X-Website: http://www.wowace.com/addons/utf8/
 
-utf8data.lua
-utf8.lua
+UTF8Data.lua
+UTF8.lua
