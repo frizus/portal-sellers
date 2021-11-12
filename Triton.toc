@@ -1,54 +1,27 @@
-## Interface: 11304
+## Interface: 20502
 ## Title: Triton
 ## Title-zhCN: Triton
 ## Author: Triton@匕首岭
-## Version: 1.57
+## Version: 1.58
 ## Notes: |cff00aaaa Triton organize messages into events. Easy to track events of LFG, gold raid or others you interested.|r
 ## Notes-zhCN: |cff00aaaa Triton-跟团助手。将杂乱的聊天消息组织成清晰明了的主题，便于跟团，关注活动等等，只跟踪你关注的信息。|r
 ## SavedVariables: TritonDB
 
 Libs\LibStub\LibStub.lua
-Libs\CallbackHandler-1.0\CallbackHandler-1.0.xml
-Libs\LibSharedMedia-3.0\LibSharedMedia-3.0.lua
-
 Libs\AceAddon-3.0\AceAddon-3.0.xml
 Libs\AceGUI-3.0\AceGUI-3.0.xml
 Libs\AceConsole-3.0\AceConsole-3.0.xml
 Libs\AceLocale-3.0\AceLocale-3.0.xml
 Libs\AceEvent-3.0\AceEvent-3.0.xml
-Libs\AceHook-3.0\AceHook-3.0.xml
+#Libs\AceHook-3.0\AceHook-3.0.xml
 Libs\AceDB-3.0\AceDB-3.0.xml
-Libs\AceDBOptions-3.0\AceDBOptions-3.0.xml
 Libs\AceConfig-3.0\AceConfig-3.0.xml
-Libs\LibDeformat-3.0\lib.xml
+#Libs\LibDeformat-3.0\LibDeformat-3.0.xml
 Libs\UTF8\UTF8.xml
+#Libs\LibUIDropDownMenu\LibUIDropDownMenu.xml
 
-Libs\LibDBIcon-1.0\embeds.xml
-Libs\LibDBIcon-1.0\LibDBIcon-1.0\lib.xml
-Libs\LibParse\Load.xml
-
-Locale\enUS.lua
-Locale\zhCN.lua
-
-Widgets\ListBox.lua
-Widgets\TritonBasicLabel.lua
-Widgets\TritonLabel.lua
-Widgets\TritonFrame.lua
-Widgets\TritonScrollFrame.lua
-Widgets\TritonEntry.lua
-Widgets\TritonSimpleHTML.lua
-
-Widgets\TritonGUI-3.0.lua
+Locales\ruRU.lua
 
 Triton.lua
-
-Modules\Options.lua
-Modules\GUI.lua
-Modules\Minimap.lua
-Modules\Message.lua
-
-CChatNotifier\MainUI.lua
-CChatNotifier\MainUI_functions.lua
-CChatNotifier\ListFrame.lua
 
 ##EOF
