@@ -374,9 +374,9 @@ local readerMethods = {
 	end,
 
 	ignore = function(self, length)
-		if self:eof() then return end
 		local i = 1
 		while i <= length do
+			if self:eof() then break end
 			self.position = self.position + utf8charbytes(self.text, self.position)
 			i = i + 1
 		end

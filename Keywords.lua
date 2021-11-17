@@ -3,9 +3,9 @@ local Keywords = {}
 addon.Keywords = Keywords
 
 function Keywords:Parse(s, trim)
-    local state = "start"
-    local keywordsLogics = {}
-    local currentKeywordLogic = nil
+    local state = ""
+    local keywordGroups = {}
+    local currentKeywordGroup = nil
     local alreadyExists = nil
     local chars = ""
     local c
@@ -13,48 +13,48 @@ function Keywords:Parse(s, trim)
     local reader = string.reader(s)
 
     while not reader:eof() do
-        if state == "start" or state == "next" then
+        if state == "" or state == "," then
             -- utf8gsub https://gist.github.com/Stepets/3b4dbaf5e6e6a60f3862
             chars = self:ParserNormalizeSpaces(reader:get({",", "&", "-"}), trim)
             if #chars > 0 then
                 chars = chars:lower()
-                currentKeywordLogic = {["and"] = {chars}}
-                alreadyExists = {["and"] = {[chars] = true}}
+                currentKeywordGroup = {["&"] = {chars}}
+                alreadyExists = {["&"] = {[chars] = true}}
             end
-        elseif state == "and" then
+        elseif state == "&" then
             chars = self:ParserNormalizeSpaces(reader:get({",", "&", "-"}), trim)
             if #chars > 0 then
-                if currentKeywordLogic == nil then
-                    currentKeywordLogic = {}
+                if currentKeywordGroup == nil then
+                    currentKeywordGroup = {}
                     alreadyExists = {}
                 end
-                if currentKeywordLogic["and"] == nil then
-                    currentKeywordLogic["and"] = {}
-                    alreadyExists["and"] = {}
+                if currentKeywordGroup["&"] == nil then
+                    currentKeywordGroup["&"] = {}
+                    alreadyExists["&"] = {}
                 end
 
                 chars = chars:lower()
-                if alreadyExists["and"][chars] == nil then
-                    table.insert(currentKeywordLogic["and"], chars)
-                    alreadyExists["and"][chars] = true
+                if alreadyExists["&"][chars] == nil then
+                    table.insert(currentKeywordGroup["&"], chars)
+                    alreadyExists["&"][chars] = true
                 end
             end
-        elseif state == "exclude" then
+        elseif state == "-" then
             chars = self:ParserNormalizeSpaces(reader:get({",", "&", "-"}), trim)
             if #chars > 0 then
-                if currentKeywordLogic == nil then
-                    currentKeywordLogic = {}
+                if currentKeywordGroup == nil then
+                    currentKeywordGroup = {}
                     alreadyExists = {}
                 end
-                if currentKeywordLogic["exclude"] == nil then
-                    currentKeywordLogic["exclude"] = {}
-                    alreadyExists["exclude"] = {}
+                if currentKeywordGroup["-"] == nil then
+                    currentKeywordGroup["-"] = {}
+                    alreadyExists["-"] = {}
                 end
 
                 chars = chars:lower()
-                if alreadyExists["exclude"][chars] == nil then
-                    table.insert(currentKeywordLogic["exclude"], chars)
-                    alreadyExists["exclude"][chars] = true
+                if alreadyExists["-"][chars] == nil then
+                    table.insert(currentKeywordGroup["-"], chars)
+                    alreadyExists["-"][chars] = true
                 end
             end
         end
@@ -65,26 +65,26 @@ function Keywords:Parse(s, trim)
 
         c = reader:peek()
         if c == "," then
-            state = "next"
-            if currentKeywordLogic ~= nil then
-                table.insert(keywordsLogics, currentKeywordLogic)
-                currentKeywordLogic = nil
+            state = ","
+            if currentKeywordGroup ~= nil then
+                table.insert(keywordGroups, currentKeywordGroup)
+                currentKeywordGroup = nil
                 alreadyExists = nil
             end
         elseif c == "&" then
-            state = "and"
+            state = "&"
         elseif c == "-" then
-            state = "exclude"
+            state = "-"
         end
         reader:ignore(1)
     end
 
-    if currentKeywordLogic ~= nil then
-        table.insert(keywordsLogics, currentKeywordLogic)
+    if currentKeywordGroup ~= nil then
+        table.insert(keywordGroups, currentKeywordGroup)
         alreadyExists = nil
     end
 
-    return keywordsLogics
+    return keywordGroups
 end
 
 function Keywords:ParserNormalizeSpaces(s, trim)
