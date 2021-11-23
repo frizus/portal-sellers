@@ -6,9 +6,9 @@ DB.defaults = {
     global = {
         trackingEnabled = true,
         trackedMessageLifetime = 120,
-        trackingRefreshInterval = 2,
+        trackingRefreshRate = 2,
         interfaceFontSize = 12.8,
-        interfaceTrackingPanel = {
+        interfaceTrackerWindowRect = {
             height = 160,
             top = 260,
             left = 950,
@@ -21,12 +21,12 @@ DB.defaults = {
 function DB:ConvertOldParameters()
     -- conversion from version 1.57 to 1.58
     local conversion = {
-        ["ui_switch_on"] = "interfaceTrackingPanelVisible",
+        ["ui_switch_on"] = "interfaceTrackerWindowVisible",
         ["globalswitch"] = "trackingEnabled",
         ["max_topic_live_secs"] = "trackedMessageLifetime",
         ["refresh_interval"] = "trackingRefreshRate",
-        ["fontsize"] = "interfaceFontsize",
-        ["ui"] = "interfaceTrackingPanel",
+        ["fontsize"] = "interfaceFontSize",
+        ["ui"] = "interfaceTrackerWindowRect",
     }
 
     for oldKey, newKey in pairs(conversion) do
@@ -57,5 +57,5 @@ function DB:ConvertOldParameters()
 end
 
 function DB:BeforeLogout()
-    addon.param.interfaceTrackingPanelVisible = addon.modules.Monitoring:IsAlive()
+    addon.param.interfaceTrackerWindowVisible = addon.modules.Monitoring:IsAlive()
 end

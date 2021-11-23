@@ -8,7 +8,10 @@ local L = LibStub("AceLocale-3.0"):GetLocale(addonName)
 function addon:OnInitialize()
 	--addon.db = AceDB:New(addonName .. "DB", addon.DB.defaults, true)
 	--addon.param = addon.db.global
-	--addon.DB:ConvertOldParameters()
+	addon.param = {}
+	addon.param["minimap"] = {}
+
+	addon.Minimap:Create()
 end
 
 -- AceConfigRegistry-3.0 валидация
@@ -21,6 +24,8 @@ function addon:OnEnable()
 
 	print(string.format(L["welcome_message"], addonName, GetAddOnMetadata(addonName, "Version")))
 
+	--addon.DB:ConvertOldParameters()
+
 	self:RegisterEvent("CHAT_MSG_WHISPER", function(self, text, playerName, languageName, channelName, playerName2, specialFlags, zoneChannelID, channelIndex, channelBaseName, unused, lineID, guid, bnSenderID, isMobile, isSubtitle, hideSenderInLetterbox, supressRaidIcons)
 		tprint(addon.Keywords:Parse(text))
 	end)
@@ -29,7 +34,7 @@ function addon:OnEnable()
 
 	end)
 
-	--if addon.db.global.interfaceTrackingPanelVisible then
+	--if addon.db.global.interfaceTrackerWindowVisible then
 	--addon.modules.Monitoring:Create()
 	--end
 end

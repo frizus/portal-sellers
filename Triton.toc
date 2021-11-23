@@ -23,6 +23,9 @@ Libs\UTF8\UTF8.xml
 Locales\ruRU.lua
 
 Triton.lua
+Minimap.lua
 Keywords.lua
+Widget.lua
+Widgets\_List.xml
 
 ##EOF
