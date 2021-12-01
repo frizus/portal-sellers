@@ -16,6 +16,7 @@ end
 
 function Minimap:OnClick(button, mouseButton)
     if mouseButton == "LeftButton" then
-        print("show tracker window")
+        InterfaceOptionsFrame_Show()
+        InterfaceOptionsFrame_OpenToCategory(addonName)
     end
 end

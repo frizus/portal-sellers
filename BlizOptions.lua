@@ -5,24 +5,23 @@ local L = LibStub("AceLocale-3.0"):GetLocale(addonName)
 
 function BlizOptions.GetOptions(uiType, uiName, appName)
     if appName == addonName then
-        local options = {
+        return {
             type = "group",
-            name = GetAddOnMetadata(addonName, "Title") .. " (" .. GetAddOnMetadata(addonName, "Version") .. ")",
+            name = string.format(L["bliz_options_title"], GetAddOnMetadata(addonName, "Title"), GetAddOnMetadata(addonName, "Version")),
             get = function(info)
-                return addon.db.global[info[#info]] or ""
+                return addon.param[info[#info]] or ""
             end,
             set = function(info, value)
-                addon.db.global[info[#info]] = value
+                addon.param[info[#info]] = value
             end,
             args = {
-                addoninfo = {
+                top = {
                     type = "description",
-                    name = L["ADDON_INFO"],
-                    descStyle = L["ADDON_INFO"],
+                    name = L["bliz_options_addon_info"],
                     order = 0.1,
                 },
 
-                header01 = {
+                header = {
                     type = "header",
                     name = "",
                     order = 1.01,
@@ -30,25 +29,31 @@ function BlizOptions.GetOptions(uiType, uiName, appName)
 
                 trackedMessageLifetime = {
                     type = "range",
-                    width = "double",
                     min = 10,
                     max = 600,
                     step = 1,
                     softMin = 10,
                     softMax = 600,
-                    name = L["Message alive time"],
-                    desc = L["How long will message be removed from event (default to 120 seconds)?"],
+                    name = L["bliz_options_tracked_message_lifetime"],
+                    desc = string.format(L["bliz_options_tracked_message_lifetime_tooltip"], addon.DB.defaults.global.trackedMessageLifetime),
                     width = "normal",
                     order = 1.1,
                 },
 
-                header02 = {
-                    type = "header",
-                    name = "",
-                    order = 2.01,
+                trackerRefreshRate = {
+                    type = "range",
+                    min = 1,
+                    max = 60,
+                    step = 1,
+                    softMin = 1,
+                    softMax = 60,
+                    name = L["bliz_options_tracking_refresh_rate"],
+                    desc = string.format(L["bliz_options_tracking_refresh_rate_tooltip"], addon.DB.defaults.global.trackerRefreshRate),
+                    width = "normal",
+                    order = 1.2,
                 },
 
-                interfaceFontSize = {
+                trackerFontSize = {
                     type = "range",
                     width = "double",
                     min = 3,
@@ -56,46 +61,40 @@ function BlizOptions.GetOptions(uiType, uiName, appName)
                     step = 0.1,
                     softMin = 3,
                     softMax = 60,
-                    name = L["Font size"],
-                    desc = L["Font size of event window (default to 12.8)."],
+                    name = L["bliz_options_tracker_messages_font_size"],
+                    desc = string.format(L["bliz_options_tracker_messages_font_size_tooltip"], addon.DB.defaults.global.trackerFontSize),
                     width = "normal",
-                    order = 2.1,
+                    order = 1.3,
                 },
 
-                header03 = {
+                trackerHideChannel = {
+                    type = "toggle",
+                    name = L["bliz_options_tracker_hide_channel"],
+                    desc = string.format(L["bliz_options_tracker_hide_channel_tooltip"], addon.DB.defaults.global.trackerHideChannel and L["bliz_options_toggle_enabled"] or L["bliz_options_toggle_disabled"]),
+                    width = "normal",
+                    order = 1.4,
+                },
+
+                trackerHideSimilarMessages = {
+                    type = "toggle",
+                    name = L["bliz_options_tracker_hide_similar_messages"],
+                    desc = string.format(L["bliz_options_tracker_hide_similar_messages_tooltip"], addon.DB.defaults.global.trackerHideSimilarMessages and L["bliz_options_toggle_enabled"] or L["bliz_options_toggle_disabled"]),
+                    width = "normal",
+                    order = 1.5,
+                },
+
+                header2 = {
                     type = "header",
                     name = "",
-                    order = 3.01,
+                    order = 2.01,
                 },
 
-                trackingRefreshInterval = {
-                    type = "range",
-                    width = "double",
-                    min = 1,
-                    max = 60,
-                    step = 1,
-                    softMin = 1,
-                    softMax = 60,
-                    name = L["Refresh interval"],
-                    desc = L["How frequent to refresh event window (default to 2 seconds)?"],
-                    width = "normal",
-                    order = 3.1,
-                },
-
-                header06 = {
-                    type = "header",
-                    name = "",
-                    order = 6.01,
-                },
-
-                authorinfo = {
+                bottom = {
                     type = "description",
-                    name = L["AUTHOR_INFO"],
-                    descStyle = L["AUTHOR_INFO"],
-                    order = 6.1,
+                    name = L["bliz_options_bottom"],
+                    order = 2.1,
                 },
             },
         }
-        return options
     end
 end

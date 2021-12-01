@@ -4,11 +4,13 @@ addon.DB = DB
 
 DB.defaults = {
     global = {
-        trackingEnabled = true,
+        trackerEnabled = true,
         trackedMessageLifetime = 120,
-        trackingRefreshRate = 2,
-        interfaceFontSize = 12.8,
-        interfaceTrackerWindowRect = {
+        trackerRefreshRate = 2,
+        trackerHideChannel = false,
+        trackerHideSimilarMessages = false,
+        trackerFontSize = 12.8,
+        trackerWindowRect = {
             height = 160,
             top = 260,
             left = 950,
@@ -21,18 +23,24 @@ DB.defaults = {
 function DB:ConvertOldParameters()
     -- conversion from version 1.57 to 1.58
     local conversion = {
-        ["ui_switch_on"] = "interfaceTrackerWindowVisible",
-        ["globalswitch"] = "trackingEnabled",
+        ["ui_switch_on"] = "trackerWindowVisible",
+        ["globalswitch"] = "trackerEnabled",
         ["max_topic_live_secs"] = "trackedMessageLifetime",
-        ["refresh_interval"] = "trackingRefreshRate",
-        ["fontsize"] = "interfaceFontSize",
-        ["ui"] = "interfaceTrackerWindowRect",
+        ["refresh_interval"] = "trackerRefreshRate",
+        ["fontsize"] = "trackerFontSize",
+        ["ui"] = "trackerWindowRect",
     }
+    local remove = { "cleaner_run_interval", "safe_cleaner_run_interval" }
 
     for oldKey, newKey in pairs(conversion) do
         if addon.param[oldKey] ~= nil then
             addon.param[newKey] = addon.param[oldKey]
             addon.param[oldKey] = nil
+        end
+    end
+    for _, key in pairs(remove) do
+        if addon.param[key] ~= nil then
+            addon.param[key] = nil
         end
     end
 
@@ -57,5 +65,5 @@ function DB:ConvertOldParameters()
 end
 
 function DB:BeforeLogout()
-    addon.param.interfaceTrackerWindowVisible = addon.modules.Monitoring:IsAlive()
+    addon.param.trackerWindowVisible = addon.modules.Monitoring:IsAlive()
 end

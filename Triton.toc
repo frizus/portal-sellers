@@ -24,6 +24,8 @@ Locales\ruRU.lua
 
 Triton.lua
 Minimap.lua
+BlizOptions.lua
+DB.lua
 Keywords.lua
 Widget.lua
 Widgets\_List.xml

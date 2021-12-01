@@ -12,14 +12,15 @@ function addon:OnInitialize()
 	addon.param["minimap"] = {}
 
 	addon.Minimap:Create()
+
+	AceConfigRegistry:RegisterOptionsTable(addonName, addon.BlizOptions.GetOptions)
+	AceConfigDialog:AddToBlizOptions(addonName, GetAddOnMetadata(addonName, "Title"))
+
+	--addon:RegisterChatCommand("triton", addon.modules.Monitoring.Show)
 end
 
 -- AceConfigRegistry-3.0 валидация
 function addon:OnEnable()
-	--AceConfigRegistry:RegisterOptionsTable(addonName, addon.BlizOptions.GetOptions)
-	--AceConfigDialog:AddToBlizOptions(addonName, GetAddOnMetadata(addonName, "Title"))
-
-	--addon:RegisterChatCommand("triton", addon.modules.Monitoring.Show)
 	--addon:RegisterEvent("PLAYER_LOGOUT", addon.DB.BeforeLogout)
 
 	print(string.format(L["welcome_message"], addonName, GetAddOnMetadata(addonName, "Version")))
@@ -34,7 +35,7 @@ function addon:OnEnable()
 
 	end)
 
-	--if addon.db.global.interfaceTrackerWindowVisible then
+	--if addon.db.global.trackerWindowVisible then
 	--addon.modules.Monitoring:Create()
 	--end
 end
@@ -62,10 +63,10 @@ end
 
 function addon:TrackingHooks(enable)
 	if enable == nil then
-		enable = not addon.db.global.trackingEnabled
+		enable = not addon.db.global.trackerEnabled
 	end
 
-	if enable and not addon.db.global.trackingEnabled then
+	if enable and not addon.db.global.trackerEnabled then
 		local events = {
 			"CHAT_MSG_SAY",
 			"CHAT_MSG_YELL",
@@ -76,9 +77,9 @@ function addon:TrackingHooks(enable)
 		for _, event in pairs(events) do
 			addon:RegisterEvent(event, addon.Message[event])
 		end
-		addon.db.global.trackingEnabled = true
-	elseif not enable and addon.db.global.trackingEnabled then
+		addon.db.global.trackerEnabled = true
+	elseif not enable and addon.db.global.trackerEnabled then
 		addon:UnregisterAllEvents()
-		addon.db.global.trackingEnabled = false
+		addon.db.global.trackerEnabled = false
 	end
 end
