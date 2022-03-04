@@ -1,76 +1,59 @@
-local localeName = ...
-local Type, Version = "TritonMinimapPin", 1
-local L = LibStub("AceLocale-3.0"):GetLocale(localeName)
-local AceGUI = LibStub("AceGUI-3.0")
+local addonName, addon = ...
+local Widget, L, DB = addon.Widget, addon.L, addon.param
 
-local function buttonOnUpdate(self)
-    local parent = self:GetParent()
-    local mx, my = parent:GetCenter()
+local function button_OnUpdate(self)
+    local widget = self.widget
     local px, py = GetCursorPosition()
-    local w = ((parent:GetWidth() / 2) + 5)
-    local scale = parent:GetEffectiveScale()
-    px, py = px / scale, py / scale
-    local dx, dy = px - mx, py - my
-    local dist = math.sqrt(dx * dx + dy * dy) / w
-    if dist < 1 then
-        dist = 1
-    elseif dist > 2 then
-        dist = 2
-    end
-
-    local minimapPos = math.deg(math.atan2(dy, dx)) % 360
-    self.obj:UpdatePosition(minimapPos, dist)
-end
-
-local function iconFocus(icon, focus)
-    if focus then
-        icon:SetTexCoord(0.05, 0.95, 0.05, 0.95)
-    else
-        icon:SetTexCoord(0, 1, 0, 1)
+    if px ~= widget.lastMouseX or py ~= widget.lastMouseY then
+        local parent = self:GetParent()
+        local mx, my = parent:GetCenter()
+        local scale = parent:GetEffectiveScale()
+        px, py = px / scale, py / scale
+        widget.lastMouseX = px
+        widget.lastMouseY = py
+        self.widget:UpdatePosition(math.deg(math.atan2(py - my, px - mx)) % 360)
     end
 end
 
-local function buttonOnDragStart(self)
-    self.obj:SetUserData("isDragging", true)
+local function button_OnDragStart(self)
+    local widget = self.widget
     self:LockHighlight()
-    iconFocus(self.obj.icon, true)
-    self:SetScript("OnUpdate", buttonOnUpdate)
-    if GameTooltip:IsShown() then
-        GameTooltip:Hide()
-    end
+    widget:TogglePinFocus(true)
+    self:SetScript("OnUpdate", button_OnUpdate)
+    widget.isDragging = true
+    widget:HideTooltip()
 end
 
-local function buttonOnDragStop(self)
-    self.obj:SetUserData("isDragging", false)
-    self:UnlockHighlight()
-    iconFocus(self.obj.icon, false)
+local function button_OnDragStop(self)
+    local widget = self.widget
+    widget.isDragging = false
     self:SetScript("OnUpdate", nil)
+    widget:TogglePinFocus(false)
+    self:UnlockHighlight()
 end
 
-local function buttonOnMouseDown(self)
-    iconFocus(self.obj.icon, true)
+local function button_OnMouseDown(self)
+    self.widget:TogglePinFocus(true)
 end
 
-local function buttonOnMouseUp(self)
-    iconFocus(self.obj.icon, false)
+local function button_OnMouseUp(self)
+    self.widget:TogglePinFocus(false)
 end
 
-local function buttonOnEnter(self)
-    local widget = self.obj
-    if not widget:GetUserData("isDragging") then
+local function button_OnClick(self, mouseButton)
+    self.widget:TriggerEvent("OnClick", mouseButton)
+end
+
+local function button_ShowTooltip(self)
+    local widget = self.widget
+    if not widget.isDragging then
         GameTooltip:SetOwner(self, "ANCHOR_BOTTOMLEFT", 0, 0)
-        if widget:GetUserData("trackerWindowIsShown")() then
-            GameTooltip:AddLine(L["minimap_pin_tooltip_tracker_window_shown"])
-        else
-            GameTooltip:AddLine(L["minimap_pin_tooltip_tracker_window_hidden"])
-        end
+        GameTooltip:AddLine(
+        widget.trackerWindowIsShown() and
+                L["minimap_pin_tooltip_tracker_window_shown"] or
+                L["minimap_pin_tooltip_tracker_window_hidden"]
+        )
         GameTooltip:Show()
-    end
-end
-
-local function buttonOnLeave(self)
-    if GameTooltip:IsShown() then
-        GameTooltip:Hide()
     end
 end
 
@@ -94,95 +77,99 @@ local minimapShapes = {
     ["TRICORNER-BOTTOMRIGHT"] = { false, true, true, true },
 }
 
-local methods = {
-    ["OnAcquire"] = function(self)
-        self:SetUserData("isDragging", false)
-        iconFocus(self.icon, false)
-    end,
-
-    ["OnAcquireExtra"] = function(self, options)
-        self.frame:SetParent(options.minimapFrame)
-        if options.params.minimapPos == nil then
-            options.params.minimapPos = 225
+local method = {}
+method.OnAcquire = function(self, options)
+    self:SetParent(_G["Minimap"])
+    self:TogglePinFocus(false)
+    DB.minimap.minimapPos = DB.minimap.minimapPos or 225
+    self:UpdatePosition()
+    self.trackerWindowIsShown = options.trackerWindowIsShown
+    self:InitTooltip(self.frame, button_ShowTooltip)
+end
+method.OnRelease = function(self)
+    self.isDragging = nil
+    self.trackerWindowIsShown = nil
+    self.lastMouseX = nil
+    self.lastMouseY = nil
+    self:RemoveTooltip(self.frame)
+end
+method.SetParent = function(self, parent)
+    if parent then
+        local frame = self.frame
+        if frame:GetParent() ~= parent then
+            frame:SetParent(nil)
+            frame:SetParent(parent)
+            frame:SetFrameStrata("MEDIUM")
+            frame:SetFrameLevel(8)
         end
-        if options.params.distance == nil then
-            options.params.distance = 1
-        end
-        self:SetUserData("params", options.params)
-        self:SetUserData("trackerWindowIsShown", options.trackerWindowIsShown)
-        self.frame:SetScript("OnClick", options.onPinClick)
-        self:UpdatePosition()
-        self.frame:Show()
-    end,
-
-    ["UpdatePosition"] = function(self, minimapPos, distance)
-        local params = self:GetUserData("params")
-        if minimapPos ~= nil then
-            params.minimapPos = minimapPos
-        end
-        if distance ~= nil then
-            params.distance = distance
-        end
-        local button = self.frame
-        local parent = button:GetParent()
-        local w = ((parent:GetWidth() / 2) + 10) * params.distance
-        local h = ((parent:GetHeight() / 2) + 10) * params.distance
-        local rounding = 10
-        local angle = math.rad(params.minimapPos)
-        local y = math.sin(angle)
-        local x = math.cos(angle)
-        local q = 1
-        if x < 0 then
-            q = q + 1
-        end
-        if y > 0 then
-            q = q + 2
-        end
-        local minimapShape = GetMinimapShape and GetMinimapShape() or "ROUND"
-        local quadTable = minimapShapes[minimapShape]
-        if quadTable[q] then
-            x = x * w
-            y = y * h
-        else
-            local diagRadius = math.sqrt(2 * (w) ^ 2) - rounding
-            x = math.max(-w, math.min(x * diagRadius, w))
-            diagRadius = math.sqrt(2 * (h) ^ 2) - rounding
-            y = math.max(-h, math.min(y * diagRadius, h))
-        end
-        button:SetPoint("CENTER", parent, "CENTER", x, y)
     end
-}
+end
+method.TogglePinFocus = function(self, focus)
+    if focus then
+        self.icon:SetTexCoord(0.05, 0.95, 0.05, 0.95)
+    else
+        self.icon:SetTexCoord(0, 1, 0, 1)
+    end
+end
+method.UpdatePosition = function(self, newPosition)
+    if newPosition then
+        DB.minimap.minimapPos = newPosition
+    end
+    local button = self.frame
+    local parent = button:GetParent()
+    local w = (parent:GetWidth() / 2) + 5
+    local h = (parent:GetHeight() / 2) + 5
+    local angle = math.rad(DB.minimap.minimapPos)
+    local x, y, q = math.cos(angle), math.sin(angle), 1
+    if x < 0 then
+        q = q + 1
+    end
+    if y > 0 then
+        q = q + 2
+    end
+    local minimapShape = GetMinimapShape and GetMinimapShape() or "ROUND"
+    local quadTable = minimapShapes[minimapShape]
 
-local function Constructor()
-    local button = CreateFrame("Button")
+    if quadTable[q] then
+        x = x * w
+        y = y * h
+    else
+        local diagRadius = math.sqrt(2 * (w) ^ 2) - 10
+        x = math.max(-w, math.min(x * diagRadius, w))
+        diagRadius = math.sqrt(2 * (h) ^ 2) - 10
+        y = math.max(-h, math.min(y * diagRadius, h))
+    end
+    button:SetPoint("CENTER", parent, "CENTER", x, y)
+end
+
+Widget:RegisterType("MinimapPin", function()
+    local button = CreateFrame("Button", nil, UIParent)
     button:Hide()
 
-    button:SetFrameStrata("MEDIUM")
     button:SetSize(31, 31)
-    button:SetFrameLevel(8)
     button:RegisterForClicks("anyUp")
     button:RegisterForDrag("LeftButton")
-    button:SetHighlightTexture([[Interface\Minimap\UI-Minimap-ZoomButton-Highlight]])
-    button:SetScript("OnDragStart", buttonOnDragStart)
-    button:SetScript("OnDragStop", buttonOnDragStop)
-    button:SetScript("OnMouseDown", buttonOnMouseDown)
-    button:SetScript("OnMouseUp", buttonOnMouseUp)
-    button:SetScript("OnEnter", buttonOnEnter)
-    button:SetScript("OnLeave", buttonOnLeave)
+    button:SetHighlightTexture(136477) --"Interface\\Minimap\\UI-Minimap-ZoomButton-Highlight"
+    button:SetScript("OnDragStart", button_OnDragStart)
+    button:SetScript("OnDragStop", button_OnDragStop)
+    button:SetScript("OnMouseDown", button_OnMouseDown)
+    button:SetScript("OnMouseUp", button_OnMouseUp)
+    button:SetScript("OnClick", button_OnClick)
 
     local overlay = button:CreateTexture(nil, "OVERLAY")
     overlay:SetSize(53, 53)
-    overlay:SetTexture([[Interface\Minimap\MiniMap-TrackingBorder]])
+    overlay:SetTexture(136430) --"Interface\\Minimap\\MiniMap-TrackingBorder"
     overlay:SetPoint("TOPLEFT")
 
     local background = button:CreateTexture(nil, "BACKGROUND")
     background:SetSize(20, 20)
-    background:SetTexture([[Interface\Minimap\UI-Minimap-Background]])
+    background:SetTexture(136467) --"Interface\\Minimap\\UI-Minimap-Background"
     background:SetPoint("TOPLEFT", 7, -5)
 
     local icon = button:CreateTexture(nil, "ARTWORK")
     icon:SetSize(17, 17)
     icon:SetTexture([[Interface\Addons\Triton\Media\logo]])
+    icon:SetTexCoord(0.05, 0.95, 0.05, 0.95)
     icon:SetPoint("TOPLEFT", 7, -6)
 
     local widget = {
@@ -190,13 +177,11 @@ local function Constructor()
         overlay = overlay,
         background = background,
         icon = icon,
-        type = Type,
     }
-    for method, func in pairs(methods) do
-        widget[method] = func
+    for name, closure in pairs(method) do
+        widget[name] = closure
     end
+    button.widget = widget
 
-    return AceGUI:RegisterAsWidget(widget)
-end
-
-AceGUI:RegisterWidgetType(Type, Constructor, Version)
+    return widget
+end)

@@ -8,26 +8,18 @@
 ## SavedVariables: TritonDB
 
 Libs\LibStub\LibStub.lua
-Libs\AceAddon-3.0\AceAddon-3.0.xml
-Libs\AceGUI-3.0\AceGUI-3.0.xml
-Libs\AceConsole-3.0\AceConsole-3.0.xml
-Libs\AceLocale-3.0\AceLocale-3.0.xml
-Libs\AceEvent-3.0\AceEvent-3.0.xml
-#Libs\AceHook-3.0\AceHook-3.0.xml
-Libs\AceDB-3.0\AceDB-3.0.xml
-Libs\AceConfig-3.0\AceConfig-3.0.xml
-#Libs\LibDeformat-3.0\LibDeformat-3.0.xml
 Libs\UTF8\UTF8.xml
-#Libs\LibUIDropDownMenu\LibUIDropDownMenu.xml
+#Libs\LibDeformat-3.0\LibDeformat-3.0.xml
 
-Locales\ruRU.lua
+Widget.lua
+Locales.lua
 
 Triton.lua
+
 Minimap.lua
-BlizOptions.lua
+Options.lua
 DB.lua
 Keywords.lua
-Widget.lua
 Widgets\_List.xml
 
 ##EOF

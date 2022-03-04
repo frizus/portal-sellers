@@ -1,43 +1,58 @@
 local addonName, addon = ...
-addon = LibStub("AceAddon-3.0"):NewAddon(addon, addonName, "AceEvent-3.0", "AceConsole-3.0")
-local AceDB = LibStub("AceDB-3.0")
-local AceConfigDialog = LibStub("AceConfigDialog-3.0")
-local AceConfigRegistry = LibStub("AceConfigRegistry-3.0")
-local L = LibStub("AceLocale-3.0"):GetLocale(addonName)
+local L = addon.L
+addon.param = {}
+local DB = addon.param
 
-function addon:OnInitialize()
-	--addon.db = AceDB:New(addonName .. "DB", addon.DB.defaults, true)
-	--addon.param = addon.db.global
-	addon.param = {}
-	addon.param["minimap"] = {}
+addon.frame = CreateFrame("Frame")
+addon.frame:RegisterEvent("ADDON_LOADED")
+addon.frame:RegisterEvent("PLAYER_LOGIN")
+local function onEvent(self, event, arg1, ...)
+	if event == "ADDON_LOADED" then
+		if arg1 == addonName then
+			addon[event](addon, arg1, ...)
+		end
+	elseif type(addon[event]) == "function" then
+		addon[event](addon, arg1, ...)
+	end
+end
+addon.frame:SetScript("OnEvent", onEvent)
 
-	addon.Minimap:Create()
-
-	AceConfigRegistry:RegisterOptionsTable(addonName, addon.BlizOptions.GetOptions)
-	AceConfigDialog:AddToBlizOptions(addonName, GetAddOnMetadata(addonName, "Title"))
-
-	--addon:RegisterChatCommand("triton", addon.modules.Monitoring.Show)
+function addon:ADDON_LOADED()
+	self.DB:Init()
+	self.DB:ConvertOldParameters()
+	self.DB:MergeWithDefault()
+	self.Minimap:Create()
+	self.Options:InitBlizPanel()
 end
 
 -- AceConfigRegistry-3.0 валидация
-function addon:OnEnable()
-	--addon:RegisterEvent("PLAYER_LOGOUT", addon.DB.BeforeLogout)
+function addon:PLAYER_LOGIN()
+	self.frame:RegisterEvent("PLAYER_LOGOUT")
 
 	print(string.format(L["welcome_message"], addonName, GetAddOnMetadata(addonName, "Version")))
 
-	--addon.DB:ConvertOldParameters()
+	self.DB:ConvertFilterGroups()
 
-	self:RegisterEvent("CHAT_MSG_WHISPER", function(self, text, playerName, languageName, channelName, playerName2, specialFlags, zoneChannelID, channelIndex, channelBaseName, unused, lineID, guid, bnSenderID, isMobile, isSubtitle, hideSenderInLetterbox, supressRaidIcons)
-		tprint(addon.Keywords:Parse(text))
-	end)
-
-	self:RegisterChatCommand("triton", function()
-
-	end)
+	self.frame:RegisterEvent("CHAT_MSG_WHISPER")
 
 	--if addon.db.global.trackerWindowVisible then
 	--addon.modules.Monitoring:Create()
 	--end
+end
+
+function addon:CHAT_MSG_WHISPER(text, playerName, languageName, channelName, playerName2, specialFlags, zoneChannelID, channelIndex, channelBaseName, unused, lineID, guid, bnSenderID, isMobile, isSubtitle, hideSenderInLetterbox, supressRaidIcons)
+	tprint(self.Keywords:Parse(text))
+end
+
+function addon:PLAYER_LOGOUT()
+	self.DB:SaveVariables()
+	--DB.trackerWindowVisible = addon.modules.Monitoring:IsAlive()
+end
+
+SLASH_TRITON1 = "/triton"
+function SlashCmdList.TRITON()
+	print("переключение видимости трекера")
+	--addon.modules.Monitoring.Show
 end
 
 -- Print contents of `tbl`, with indentation.
@@ -55,10 +70,6 @@ function tprint (tbl, indent)
 			print(formatting .. v)
 		end
 	end
-end
-
-function addon:OnDisable()
-	--addon:TrackingHooks(false)
 end
 
 function addon:TrackingHooks(enable)
