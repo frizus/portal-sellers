@@ -11,15 +11,43 @@ Libs\LibStub\LibStub.lua
 Libs\UTF8\UTF8.xml
 #Libs\LibDeformat-3.0\LibDeformat-3.0.xml
 
-Widget.lua
 Locales.lua
 
 Triton.lua
 
-Minimap.lua
-Options.lua
+Misc\Chars.lua
+Misc\Table.lua
+Misc\Widget.lua
+Misc\Mixins\TrackerList.lua
+Misc\Mixins\WidgetTooltip.lua
+
 DB.lua
-Keywords.lua
-Widgets\_List.xml
+
+Modules\Tracker.lua
+Modules\Minimap.lua
+Modules\Options.lua
+
+Modules\FilterGroups\Parser.lua
+
+Modules\Message\Parser.lua
+Modules\Message\Parser\BaseParser.lua
+Modules\Message\Parser\BattleNetTag.lua
+Modules\Message\Parser\Color.lua
+Modules\Message\Parser\RaidTag.lua
+Modules\Message\Parser\ShiftLink.lua
+Modules\Message\Parser\Output.lua
+Modules\Message\Parser\Texture.lua
+Modules\Message\Hooks.lua
+
+Widgets\BlizOptionsPanel.lua
+Widgets\Checkbox.lua
+Widgets\Container.lua
+Widgets\MinimapPin.lua
+Widgets\ScrollFrame.lua
+Widgets\ScrollFrame.lua
+Widgets\Separator.lua
+Widgets\Slider.lua
+Widgets\Text.lua
+Widgets\Tracker.lua
 
 ##EOF

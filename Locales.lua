@@ -12,13 +12,14 @@ if gameLocale == "enGB" then
 end
 
 L["welcome_message"] = "|cFF33FF99%s (%s)|r: type /triton to show tracker"
-L["bliz_options_panel_name"] = "%s"
+L["bliz_options_panel_name"] = addonName
+L["bliz_options_title"] = addonName .. " (" .. GetAddOnMetadata(addonName, "Version") .. ")"
+L["tracker_title"] = addonName
 
 if gameLocale == "ruRU" then
     L["welcome_message"] = "|cFF33FF99%s (%s)|r: введите /triton для вызова трекера"
     L["minimap_pin_tooltip_tracker_window_hidden"] = "|cffffff00Нажмите|r, чтобы показать трекер."
     L["minimap_pin_tooltip_tracker_window_shown"] = "|cffffff00Нажмите|r, чтобы скрыть трекер."
-    L["bliz_options_title"] = "%s (%s)"
     L["bliz_options_addon_info"] = "|cffca99ffTriton|r — отслеживание сообщений с настраиваемыми фильтрами. Сообщения показываются в отдельном окне. Подходит для поиска групп для тех, кто еще ищет в чате, поиска покупателей порталов магу и прочего."
     L["bliz_options_tracked_message_lifetime"] = "Время жизни сообщения"
     L["bliz_options_tracked_message_lifetime_tooltip"] = "Сколько времени найденное сообщение остается в трекере (по умолчанию %d |4секунда:секунды:секунд;)"
@@ -28,6 +29,12 @@ if gameLocale == "ruRU" then
     L["bliz_options_tracker_hide_channel_tooltip"] = "Не выводить канал у найденного сообщения в трекере (по умолчанию %s)"
     L["bliz_options_tracker_hide_similar_messages"] = "Не запоминать похожие"
     L["bliz_options_tracker_hide_similar_messages_tooltip"] = "Трекер группирует сообщения от одного игрока по одинаковым ключевым словам. Если включить, то только последнее сообщение группы будет запоминаться (по умолчанию %s)"
+    L["bliz_options_minimap_show"] = "Значок на миникарте"
+    L["bliz_options_minimap_show_tooltip"] = "Показать/скрыть значок на миникарте (по умолчанию %s)"
+    L["bliz_options_show_start_message"] = "Стартовое сообщение"
+    L["bliz_options_show_start_message_tooltip"] = "Показывать стартовое сообщение в чате (по умолчанию %s)"
+    L["bliz_options_do_track_when_closed"] = "Всегда отслеживать"
+    L["bliz_options_do_track_when_closed_tooltip"] = "Отслеживать сообщения даже когда окно трекера закрыто (по умолчанию %s)"
     L["bliz_options_toggle_enabled"] = "включено"
     L["bliz_options_toggle_disabled"] = "выключено"
     L["bliz_options_tracker_messages_font_size"] = "Размер шрифта"

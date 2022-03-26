@@ -1,5 +1,6 @@
 local addonName, addon = ...
 local Widget = addon.Widget
+local Table = addon.Table
 
 local method = {}
 method.OnAcquire = function(self, options)
@@ -19,14 +20,13 @@ method.OnRelease = function(self)
     self:ReleaseScroll()
 end
 method.ReleaseChildren = function(self)
-    if self.children then
+    if Table:NotEmpty(self.children) then
         for i = 1, #self.children do
             local child = self.children[i]
             child.mt, child.mr, child.ml = nil, nil, nil
             child:Release()
             self.children[i] = nil
         end
-        self.children = nil
     end
 end
 method.SetWidth = function(self, value, fill)
@@ -73,15 +73,14 @@ method.GetChildren = function(self)
 end
 method.SetChildren = function(self, children, layoutConfig)
     self:ReleaseChildren()
-    self.children = children
     local childrenFrame = self:GetChildrenFrame()
-    for i = 1, #children do
-        local child = children[i]
+    for i, child in ipairs(children) do
         local config = layoutConfig[i]
         child:SetParent(childrenFrame)
         child.mt = config.marginTop or 0
         child.mr = config.marginRight or 0
         child.ml = config.marginLeft or 0
+        table.insert(self.children, child)
     end
 end
 method.Scroll = function(self, haveScroll)
@@ -137,6 +136,7 @@ Widget:RegisterType("Container", function()
 
     local widget = {
         frame = frame,
+        children = {},
     }
     for name, closure in pairs(method) do
         widget[name] = closure

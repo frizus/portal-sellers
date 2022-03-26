@@ -1,5 +1,5 @@
 local addonName, addon = ...
-local Widget, DB, defaultDB = addon.Widget, addon.param, addon.DB.default
+local Widget, DB, defaultDB, Table = addon.Widget, addon.param, addon.DB.default, addon.Table
 
 local function frame_OnShow(self) self.widget:OnShow() end
 local function frame_OnHide(self) self.widget:OnHide() end
@@ -20,7 +20,6 @@ method.OnAcquire = function(self, options)
     f.refresh = frame_Refresh
     f.default = frame_Default
     self.titleText = options.title
-    self:FindInputNames(options.children)
     self.childrenConfig = options.children
 end
 method.OnRelease = function(self)
@@ -36,6 +35,12 @@ method.OnRelease = function(self)
     end
     for param in pairs(self.panelInput) do
         self.panelInput[param] = nil
+    end
+    for param in pairs(self.panelInputOnSetHandlers) do
+        self.panelInputOnSetHandlers[param] = nil
+    end
+    for param in pairs(self.panelInputSetValueClosures) do
+        self.panelInputSetValueClosures[param] = nil
     end
     self:ReleaseTitle()
     self:ReleaseContent()
@@ -75,20 +80,26 @@ method.OnHide = function(self)
         print("OnHide " .. self.titleText)
     end
 end
-method.FindInputNames = function(self, childrenConfig)
-    for i = 1, #childrenConfig do
-        local config = childrenConfig[i]
-        if config.param then
-            self.panelInputNames[config.param] = true
-        end
-        if config.type == "Container" then
-            self:FindInputNames(config.children)
+method.ProcessInput = function(self, config)
+    local name = config.param
+    if not self.panelInputNames[name] then
+        self.panelInputNames[name] = true
+        self.panelInputOnSetHandlers[name] = config.onSet
+        self.panelInputSetValueClosures[name] = function(input)
+            self.panelChangedInputs[name] = input:GetValue()
         end
     end
 end
 method.Okay = function(self)
     for param in pairs(self.panelChangedInputs) do
-        DB[param] = self.panelChangedInputs[param]
+        local newValue, oldValue = self.panelChangedInputs[param], nil
+        if self.panelInputOnSetHandlers[param] then
+            oldValue = Table:Get(DB, param)
+        end
+        Table:Set(DB, param, newValue)
+        if self.panelInputOnSetHandlers[param] and oldValue ~= newValue and not (oldValue == nil and newValue == false) then
+            self.panelInputOnSetHandlers[param](newValue)
+        end
         self.panelChangedInputs[param] = nil
     end
     if self.debug then
@@ -113,7 +124,7 @@ method.Refresh = function(self)
 end
 method.Default = function(self)
     for param in pairs(self.panelInputNames) do
-        self.panelChangedInputs[param] = defaultDB[param]
+        self.panelChangedInputs[param] = Table:Get(defaultDB, param)
     end
     if self.debug then
         print("default " .. self.titleText)
@@ -147,10 +158,9 @@ method.BuildChildren = function(self, childrenConfig)
         end
         table.insert(children, widget)
         if config.param then
+            self:ProcessInput(config)
             self.panelInput[config.param] = widget
-            widget:AddEventHandler("SetValue", function(input)
-                self.panelChangedInputs[config.param] = input:GetValue()
-            end)
+            widget:AddEventHandler("SetValue", self.panelInputSetValueClosures[config.param])
         end
     end
     return children
@@ -159,8 +169,13 @@ method.SetPanelInputsValues = function(self)
     for param, widget in pairs(self.panelInput) do
         if self.panelChangedInputs[param] ~= nil then
             widget:SetValue(self.panelChangedInputs[param])
-        elseif DB[param] ~= nil then
-            widget:SetValue(DB[param])
+        else
+            local value = Table:Get(DB, param)
+            if value ~= nil then
+                widget:SetValue(value)
+            else
+                widget:SetValue(nil)
+            end
         end
     end
 end
@@ -172,10 +187,12 @@ Widget:RegisterType("BlizOptionsPanel", function()
 
     local widget = {
         frame = frame,
+        panelInputNames = {},
+        panelChangedInputs = {},
+        panelInput = {},
+        panelInputOnSetHandlers = {},
+        panelInputSetValueClosures = {},
     }
-    widget.panelInputNames = {}
-    widget.panelChangedInputs = {}
-    widget.panelInput = {}
     for name, closure in pairs(method) do
         widget[name] = closure
     end

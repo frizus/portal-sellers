@@ -1,5 +1,5 @@
 local addonName, addon = ...
-local Widget = addon.Widget
+local Widget, WidgetTooltip = addon.Widget, addon.WidgetTooltip
 
 local function Slider_OnValueChanged(self, value)
     local widget = self.widget
@@ -26,7 +26,7 @@ end
 
 local function EditBox_OnEnterPressed(self)
     EditBox_Refresh(self)
-    PlaySound(856) -- SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON
+    PlaySound(SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON)
 end
 
 local function EditBox_OnEnter(self)
@@ -45,6 +45,9 @@ local function EditBox_OnTextChanged(self, userInput)
 end
 
 local method = {}
+for name, closure in pairs(WidgetTooltip) do
+    method[name] = closure
+end
 method.NumericValidator = function(self, text, minusAllowed, decimalPrecision)
     local valid = true
     local value = ""
@@ -53,7 +56,7 @@ method.NumericValidator = function(self, text, minusAllowed, decimalPrecision)
     local reader = string.reader(text)
 
     while not reader:eof() do
-        local c = reader:peek()
+        local c = reader:getNext()
         if c == "-" then
             if minusAllowed and not haveDigit and not haveDot and not haveMinus then
                 value = value .. c
@@ -61,7 +64,6 @@ method.NumericValidator = function(self, text, minusAllowed, decimalPrecision)
             else
                 valid = false
             end
-            reader:ignore(1)
         elseif c == "." or c == "," then
             if not haveDot then
                 haveDot = true
@@ -80,7 +82,6 @@ method.NumericValidator = function(self, text, minusAllowed, decimalPrecision)
             else
                 valid = false
             end
-            reader:ignore(1)
         elseif
             c == "0" or c == "1" or c == "2" or c == "3" or c == "4" or
             c == "5" or c == "6" or c == "7" or c == "8" or c == "9"
@@ -97,10 +98,8 @@ method.NumericValidator = function(self, text, minusAllowed, decimalPrecision)
                 value = value .. c
             end
             haveDigit = true
-            reader:ignore(1)
         else
             valid = false
-            reader:ignore(1)
         end
     end
 
@@ -146,6 +145,9 @@ method.GetValue = function(self)
 end
 method.SetValue = function(self, value, check, update)
     value = tonumber(value)
+    if not value then
+        value = self.min
+    end
     if check == "precision" or check == nil then
         value = value - (value % self.step)
     end

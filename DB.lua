@@ -1,7 +1,7 @@
 local addonName, addon = ...
 local DB = {}
 addon.DB = DB
-local DBparam = addon.param
+local DBparam, Table = addon.param, addon.Table
 local savedVariableName = addonName .. "DB"
 
 DB.default = {
@@ -17,8 +17,18 @@ DB.default = {
         left = 950,
         width = 320,
     },
-    minimap = {},
+    trackerWindowOpened = false,
+    showStartMessage = true,
+    doTrackWhenClosed = false,
+    minimap = {
+        show = true,
+        minimapPos = 225,
+    },
 }
+
+function DB:PLAYER_LOGOUT()
+    self:SaveVariables()
+end
 
 function DB:Init()
     if type(_G[savedVariableName]) ~= "table" then
@@ -33,7 +43,7 @@ function DB:CopyParams(from, to)
         if type(value) == "table" then
             to[key] = {}
             self:CopyParams(value, to[key])
-            if self:ParamsLength(value) == 0 then
+            if Table:Empty(value) then
                 from[key] = nil
             end
         else
@@ -45,32 +55,33 @@ end
 
 -- conversion from version 1.57 to 1.58
 function DB:ConvertOldParameters()
-    if DBparam.global == nil then
-        return
+    if DBparam.profileKeys ~= nil then
+        DBparam.profileKeys = nil
     end
-    DBparam.profileKeys = nil
-    local conversion = {
-        ["globalswitch"] = "trackerEnabled",
-        ["max_topic_live_secs"] = "trackedMessageLifetime",
-        ["refresh_interval"] = "trackerRefreshRate",
-        ["fontsize"] = "trackerFontSize",
-        ["ui"] = "trackerWindowRect",
-        ["ui_switch_on"] = "trackerWindowVisible",
-    }
-    local remove = {
-        ["cleaner_run_interval"] = true,
-        ["safe_cleaner_run_interval"] = true
-    }
+    if DBparam.global ~= nil then
+        local conversion = {
+            ["globalswitch"] = "trackerEnabled",
+            ["max_topic_live_secs"] = "trackedMessageLifetime",
+            ["refresh_interval"] = "trackerRefreshRate",
+            ["fontsize"] = "trackerFontSize",
+            ["ui"] = "trackerWindowRect",
+            ["ui_switch_on"] = "trackerWindowOpened",
+        }
+        local remove = {
+            ["cleaner_run_interval"] = true,
+            ["safe_cleaner_run_interval"] = true
+        }
 
-    for oldName, value in pairs(DBparam.global) do
-        if conversion[oldName] then
-            DBparam[conversion[oldName]] = value
-        elseif not remove[oldName] then
-            DBparam[oldName] = value
+        for oldName, value in pairs(DBparam.global) do
+            if conversion[oldName] then
+                DBparam[conversion[oldName]] = value
+            elseif not remove[oldName] then
+                DBparam[oldName] = value
+            end
+            DBparam.global[oldName] = nil
         end
-        DBparam.global[oldName] = nil
+        DBparam.global = nil
     end
-    DBparam.global = nil
 end
 
 function DB:MergeWithDefault()
@@ -98,7 +109,7 @@ end
 
 function DB:SaveVariables()
     self:RemoveDefault(DBparam, self.default)
-    _G[savedVariableName] = DBparam
+    self:CopyParams(DBparam, _G[savedVariableName])
 end
 
 function DB:RemoveDefault(params, default)
@@ -106,7 +117,7 @@ function DB:RemoveDefault(params, default)
         if params[key] ~= nil and type(value) == type(params[key]) then
             if type(value) == "table" then
                 self:RemoveDefault(params[key], value)
-                if self:ParamsLength(params[key]) == 0 then
+                if Table:Empty(value) then
                     params[key] = nil
                 end
             elseif params[key] == value then
@@ -114,12 +125,4 @@ function DB:RemoveDefault(params, default)
             end
         end
     end
-end
-
-function DB:ParamsLength(table)
-    local length = 0
-    for _ in pairs(table) do
-        length = length + 1
-    end
-    return length
 end

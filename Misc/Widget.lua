@@ -43,7 +43,8 @@ function Widget:NewWidget(type)
     if not newObj then
         newObj = self.widgetRegistry[type]()
         setmetatable(newObj, {__index = widgetBase})
-        newObj.handlers = {}
+        newObj.handlersObject = {}
+        newObj.handlersMethod = {}
         newObj.type = type
     else
         self.objPools[type][newObj] = nil
@@ -60,8 +61,11 @@ function Widget:ReleaseWidget(widget)
         widget:OnRelease()
     end
 
-    for eventName in pairs(widget.handlers) do
-        widget.handlers[eventName] = nil
+    for eventName in pairs(widget.handlersObject) do
+        widget.handlersObject[eventName] = nil
+    end
+    for eventName in pairs(widget.handlersMethod) do
+        widget.handlersMethod[eventName] = nil
     end
     f:ClearAllPoints()
     f:Hide()
@@ -81,23 +85,23 @@ end
 widgetBase.GetFrame = function(self)
     return self.frame
 end
-widgetBase.AddEventHandler = function(self, eventName, closure)
-    if not self.handlers[eventName] then
-        self.handlers[eventName] = {}
+widgetBase.AddEventHandler = function(self, eventName, object, method)
+    if type(object) == "function" then
+        self.handlersObject[eventName] = nil
+        self.handlersMethod[eventName] = object
+    else
+        self.handlersObject[eventName] = object
+        self.handlersMethod[eventName] = method or eventName
     end
-    table.insert(self.handlers[eventName], closure)
 end
 widgetBase.TriggerEvent = function(self, eventName, ...)
-    if self.handlers[eventName] then
-        for i = 1, #self.handlers[eventName] do
-            local result = self.handlers[eventName][i](self, ...)
-            if result == false then
-                return false
-            end
+    if self.handlersMethod[eventName] then
+        if self.handlersObject[eventName] then
+            return self.handlersObject[eventName][self.handlersMethod[eventName]](self.handlersObject[eventName], self, ...)
+        else
+            return self.handlersMethod[eventName](self, ...)
         end
     end
-
-    return true
 end
 widgetBase.SetParent = function(self, parent)
     if parent then
@@ -144,44 +148,7 @@ for i = 1, #frameMethods do
     end
 end
 
-local function trigger_OnEnter(self)
-    self.widget:ShowTooltip()
-end
-local function trigger_OnLeave(self)
-    self.widget:HideTooltip()
-end
-widgetBase.InitTooltip = function(self, trigger, title, tooltip)
-    if type(title) == "function" then
-        trigger:SetScript("OnEnter", title)
-        trigger:SetScript("OnLeave", trigger_OnLeave)
-    else
-        if tooltip and tooltip ~= "" then
-            self.title = title
-            self.tooltip = tooltip
-            trigger:SetScript("OnEnter", trigger_OnEnter)
-            trigger:SetScript("OnLeave", trigger_OnLeave)
-        end
-    end
 
-end
-widgetBase.RemoveTooltip = function(self, trigger)
-    self.title = nil
-    self.tooltip = nil
-    trigger:SetScript("OnEnter", nil)
-    trigger:SetScript("OnLeave", nil)
-    self:HideTooltip()
-end
-widgetBase.ShowTooltip = function(self)
-    GameTooltip:SetOwner(self.frame, "ANCHOR_TOPRIGHT")
-    GameTooltip_AddNormalLine(GameTooltip, self.title, true)
-    GameTooltip_AddColoredLine(GameTooltip, self.tooltip, TOOLTIP_DEFAULT_COLOR, true)
-    GameTooltip:Show()
-end
-widgetBase.HideTooltip = function(self)
-    if GameTooltip:GetOwner() == self.frame and GameTooltip:IsShown() then
-        GameTooltip:Hide()
-    end
-end
 
 
 local fastBase = {}
@@ -225,6 +192,7 @@ Widget:RegisterLayout("Flow", function(containerWidget)
     local rowMaxHeight = 0
     local usedHeight = containerWidget.mt
     local usedRowWidth = 0
+    local rowLastMt = 0
 
     for i = 1, #children do
         local child = children[i]
@@ -241,16 +209,18 @@ Widget:RegisterLayout("Flow", function(containerWidget)
             end
             rowMaxHeight = (child.height or child:GetHeight() or 0) + child.mt
             usedRowWidth = 0
+            rowLastMt = 0
         else
             -- add in row
             if i > 1 and usedRowWidth > 0 and (usedRowWidth + width) <= containerWidth then
                 child:SetWidth(width - child.ml - child.mr)
-                child:SetPoint("TOPLEFT", children[i-1]:GetFrame(), "TOPRIGHT", child.ml, child.mt)
+                child:SetPoint("TOPLEFT", children[i-1]:GetFrame(), "TOPRIGHT", child.ml, -(child.mt - rowLastMt))
                 usedRowWidth = usedRowWidth + width
                 if child.layout then
                     Widget:Layout(child)
                 end
                 rowMaxHeight = math.max(rowMaxHeight, (child.height or child:GetHeight() or 0) + child.mt)
+                rowLastMt = child.mt
             else -- new row
                 -- second or subsequent row
                 usedHeight = usedHeight + (children[i-1] and (rowMaxHeight + rowsExtraSpace) or 0)
@@ -266,6 +236,7 @@ Widget:RegisterLayout("Flow", function(containerWidget)
                     Widget:Layout(child)
                 end
                 rowMaxHeight = (child.height or child:GetHeight() or 0) + child.mt
+                rowLastMt = child.mt
             end
         end
 

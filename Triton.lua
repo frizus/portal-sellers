@@ -2,17 +2,29 @@ local addonName, addon = ...
 local L = addon.L
 addon.param = {}
 local DB = addon.param
+addon.eventHandlersObject, addon.eventHandlersObjectMethod = {}, {}
+
+function addon:RegisterEvent(event, object, method)
+	self.frame:RegisterEvent(event)
+	self.eventHandlersObject[event] = object or self
+	self.eventHandlersObjectMethod[event] = method or event
+end
+function addon:UnregisterEvent(event)
+	self.frame:UnregisterEvent(event)
+	self.eventHandlersObject[event] = nil
+	self.eventHandlersObjectMethod[event] = nil
+end
 
 addon.frame = CreateFrame("Frame")
-addon.frame:RegisterEvent("ADDON_LOADED")
-addon.frame:RegisterEvent("PLAYER_LOGIN")
-local function onEvent(self, event, arg1, ...)
+addon:RegisterEvent("ADDON_LOADED")
+addon:RegisterEvent("PLAYER_LOGIN")
+local function onEvent(self, event, ...)
 	if event == "ADDON_LOADED" then
-		if arg1 == addonName then
-			addon[event](addon, arg1, ...)
+		if ... == addonName and addon.eventHandlersObject[event] then
+			addon.eventHandlersObject[event][addon.eventHandlersObjectMethod[event]](addon.eventHandlersObject[event], ...)
 		end
-	elseif type(addon[event]) == "function" then
-		addon[event](addon, arg1, ...)
+	elseif addon.eventHandlersObject[event] then
+		addon.eventHandlersObject[event][addon.eventHandlersObjectMethod[event]](addon.eventHandlersObject[event], ...)
 	end
 end
 addon.frame:SetScript("OnEvent", onEvent)
@@ -21,38 +33,38 @@ function addon:ADDON_LOADED()
 	self.DB:Init()
 	self.DB:ConvertOldParameters()
 	self.DB:MergeWithDefault()
-	self.Minimap:Create()
+	if DB.minimap.show then
+		self.Minimap:Show()
+	end
 	self.Options:InitBlizPanel()
 end
 
 -- AceConfigRegistry-3.0 валидация
 function addon:PLAYER_LOGIN()
-	self.frame:RegisterEvent("PLAYER_LOGOUT")
-
-	print(string.format(L["welcome_message"], addonName, GetAddOnMetadata(addonName, "Version")))
-
+	if DB.showStartMessage then
+		print(string.format(L["welcome_message"], addonName, GetAddOnMetadata(addonName, "Version")))
+	end
 	self.DB:ConvertFilterGroups()
+	self:RegisterEvent("PLAYER_LOGOUT", self.DB)
 
-	self.frame:RegisterEvent("CHAT_MSG_WHISPER")
+	if DB.trackerWindowOpened then
+		self.Tracker:Show()
+	end
+	self:ToggleTrackEvents("init")
 
-	--if addon.db.global.trackerWindowVisible then
-	--addon.modules.Monitoring:Create()
-	--end
-end
-
-function addon:CHAT_MSG_WHISPER(text, playerName, languageName, channelName, playerName2, specialFlags, zoneChannelID, channelIndex, channelBaseName, unused, lineID, guid, bnSenderID, isMobile, isSubtitle, hideSenderInLetterbox, supressRaidIcons)
-	tprint(self.Keywords:Parse(text))
-end
-
-function addon:PLAYER_LOGOUT()
-	self.DB:SaveVariables()
-	--DB.trackerWindowVisible = addon.modules.Monitoring:IsAlive()
+	local message = "{x}|cff0000ff before |cff00ffff |Hitem|h[item1] |Hitem |h[item2]|h |h|rafter |rafter2"
+	local parser = addon.MessageParser:Create(message, true, true)
+	parser:Parse()
+	print("|cffFFFF00Message|r",message)
+	print("|cffFFFF00Formatted|r",parser:GetFormattedMessage())
+	print("|cffFFFF00Search Message|r",parser:GetSearchMessage())
+	print("|cffFFFF00Search Message w/o shift links|r",parser:GetSearchMessage(true))
 end
 
 SLASH_TRITON1 = "/triton"
 function SlashCmdList.TRITON()
-	print("переключение видимости трекера")
-	--addon.modules.Monitoring.Show
+	addon.Tracker:Toggle()
+	addon:ToggleTrackEvents("trackerWindow")
 end
 
 -- Print contents of `tbl`, with indentation.
@@ -72,25 +84,41 @@ function tprint (tbl, indent)
 	end
 end
 
-function addon:TrackingHooks(enable)
-	if enable == nil then
-		enable = not addon.db.global.trackerEnabled
-	end
-
-	if enable and not addon.db.global.trackerEnabled then
-		local events = {
-			"CHAT_MSG_SAY",
-			"CHAT_MSG_YELL",
-			"CHAT_MSG_CHANNEL",
-			--"CHAT_MSG_SYSTEM",
-			--"WHO_LIST_UPDATE",
-		}
-		for _, event in pairs(events) do
-			addon:RegisterEvent(event, addon.Message[event])
+function addon:ToggleTrackEvents(status)
+	local enable
+	if status == "toggle" then
+		if DB.trackerWindowOpened or DB.doTrackWhenClosed then
+			enable = not DB.trackerEnabled
 		end
-		addon.db.global.trackerEnabled = true
-	elseif not enable and addon.db.global.trackerEnabled then
-		addon:UnregisterAllEvents()
-		addon.db.global.trackerEnabled = false
+		DB.trackerEnabled = not DB.trackerEnabled
+	elseif DB.trackerEnabled then
+		if status == "trackerWindow" then
+			if not DB.doTrackWhenClosed then
+				enable = DB.trackerWindowOpened
+			end
+		elseif status == "option" then
+			if not DB.trackerWindowOpened then
+				enable = DB.doTrackWhenClosed
+			end
+		elseif status == "init" then
+			if DB.trackerWindowOpened or DB.doTrackWhenClosed then
+				enable = true
+			end
+		end
+	end
+	if enable == true then
+		--self:RegisterEvent("CHAT_MSG_SAY", self.Message)
+		--self:RegisterEvent("CHAT_MSG_YELL", self.Message)
+		--self:RegisterEvent("CHAT_MSG_CHANNEL", self.Message)
+		--self:RegisterEvent("CHAT_MSG_SYSTEM", self.Message)
+		--self:RegisterEvent("WHO_LIST_UPDATE", self.Message)
+		self:RegisterEvent("CHAT_MSG_WHISPER", self.Message)
+	elseif enable == false then
+		self:UnregisterEvent("CHAT_MSG_SAY")
+		self:UnregisterEvent("CHAT_MSG_YELL")
+		self:UnregisterEvent("CHAT_MSG_CHANNEL")
+		self:UnregisterEvent("CHAT_MSG_SYSTEM")
+		self:UnregisterEvent("WHO_LIST_UPDATE")
+		self:UnregisterEvent("CHAT_MSG_WHISPER")
 	end
 end

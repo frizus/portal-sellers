@@ -1,5 +1,5 @@
 local addonName, addon = ...
-local Widget, L, DB = addon.Widget, addon.L, addon.param
+local Widget, WidgetTooltip, L, DB = addon.Widget, addon.WidgetTooltip, addon.L, addon.param
 
 local function button_OnUpdate(self)
     local widget = self.widget
@@ -40,20 +40,24 @@ local function button_OnMouseUp(self)
     self.widget:TogglePinFocus(false)
 end
 
-local function button_OnClick(self, mouseButton)
-    self.widget:TriggerEvent("OnClick", mouseButton)
-end
-
 local function button_ShowTooltip(self)
     local widget = self.widget
     if not widget.isDragging then
         GameTooltip:SetOwner(self, "ANCHOR_BOTTOMLEFT", 0, 0)
+        local trackerVisible = widget:TriggerEvent("OnTooltip")
         GameTooltip:AddLine(
-        widget.trackerWindowIsShown() and
+        trackerVisible and
                 L["minimap_pin_tooltip_tracker_window_shown"] or
                 L["minimap_pin_tooltip_tracker_window_hidden"]
         )
         GameTooltip:Show()
+    end
+end
+
+local function button_OnClick(self, mouseButton)
+    if mouseButton == "LeftButton" then
+        self.widget:TriggerEvent("OnLeftClick")
+        button_ShowTooltip(self)
     end
 end
 
@@ -78,17 +82,17 @@ local minimapShapes = {
 }
 
 local method = {}
+for name, closure in pairs(WidgetTooltip) do
+    method[name] = closure
+end
 method.OnAcquire = function(self, options)
     self:SetParent(_G["Minimap"])
     self:TogglePinFocus(false)
-    DB.minimap.minimapPos = DB.minimap.minimapPos or 225
     self:UpdatePosition()
-    self.trackerWindowIsShown = options.trackerWindowIsShown
     self:InitTooltip(self.frame, button_ShowTooltip)
 end
 method.OnRelease = function(self)
     self.isDragging = nil
-    self.trackerWindowIsShown = nil
     self.lastMouseX = nil
     self.lastMouseY = nil
     self:RemoveTooltip(self.frame)

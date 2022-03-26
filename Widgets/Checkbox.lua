@@ -1,5 +1,5 @@
 local addonName, addon = ...
-local Widget = addon.Widget
+local Widget, WidgetTooltip = addon.Widget, addon.WidgetTooltip
 
 local function frame_OnMouseUp(self)
     local widget = self.widget
@@ -13,6 +13,9 @@ local function frame_OnMouseUp(self)
 end
 
 local method = {}
+for name, closure in pairs(WidgetTooltip) do
+    method[name] = closure
+end
 method.OnAcquire = function(self, options)
     self.frame:SetParent(options.parent)
     self:SetWidth(options.width)

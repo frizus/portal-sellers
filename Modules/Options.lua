@@ -1,20 +1,13 @@
 local addonName, addon = ...
 local Options = {}
 addon.Options = Options
-local Widget, L = addon.Widget, addon.L
+local Widget, L, Minimap = addon.Widget, addon.L, addon.Minimap
 
 function Options:InitBlizPanel()
     local widthMultiplier = 170
     self:Panel({
-        leftPanelName = string.format(
-            L["bliz_options_panel_name"],
-            GetAddOnMetadata(addonName, "Title")
-        ),
-        title = string.format(
-            L["bliz_options_title"],
-            GetAddOnMetadata(addonName, "Title"),
-            GetAddOnMetadata(addonName, "Version")
-        ),
+        leftPanelName = L["bliz_options_panel_name"],
+        title = L["bliz_options_title"],
         children = {
             {
                 type = "Text",
@@ -95,6 +88,64 @@ function Options:InitBlizPanel()
                 }
             },
             {
+                type = "Container",
+                layout = "Flow",
+                width = widthMultiplier,
+                marginTop = 10,
+                children = {
+                    {
+                        type = "Checkbox",
+                        param = "doTrackWhenClosed",
+                        title = L["bliz_options_do_track_when_closed"],
+                        tooltip = string.format(
+                                L["bliz_options_do_track_when_closed_tooltip"],
+                                addon.DB.default.doTrackWhenClosed and
+                                        L["bliz_options_toggle_enabled"] or
+                                        L["bliz_options_toggle_disabled"]
+                        ),
+                        width = "fill",
+                        onSet = function(value)
+                            addon:ToggleTrackEvents("option")
+                        end
+                    },
+                }
+            },
+            {
+                type = "Container",
+                layout = "Flow",
+                width = widthMultiplier,
+                marginTop = 10,
+                children = {
+                    {
+                        type = "Checkbox",
+                        param = {"minimap", "show"},
+                        title = L["bliz_options_minimap_show"],
+                        tooltip = string.format(
+                                L["bliz_options_minimap_show_tooltip"],
+                                addon.DB.default.minimap.show and
+                                        L["bliz_options_toggle_enabled"] or
+                                        L["bliz_options_toggle_disabled"]
+                        ),
+                        width = "fill",
+                        onSet = function(value)
+                            Minimap:Toggle(value)
+                        end
+                    },
+                    {
+                        type = "Checkbox",
+                        param = "showStartMessage",
+                        title = L["bliz_options_show_start_message"],
+                        tooltip = string.format(
+                                L["bliz_options_show_start_message_tooltip"],
+                                addon.DB.default.showStartMessage and
+                                        L["bliz_options_toggle_enabled"] or
+                                        L["bliz_options_toggle_disabled"]
+                        ),
+                        width = "fill",
+                    }
+                }
+            },
+            {
                 type = "Separator",
             },
             {
@@ -113,7 +164,7 @@ function Options:Panel(arg)
     }
     local panelWidget
     if not arg.parent then
-        if self.primaryPanelName == nil then
+        if not self.primaryPanelName then
             panelWidget = Widget:Create("BlizOptionsPanel", options)
             self.primaryPanelName = panelWidget:GetName()
         else

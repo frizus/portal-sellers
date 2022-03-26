@@ -321,23 +321,26 @@ local readerMethods = {
 		return self.position > self.length
 	end,
 
-	get = function(self, delimiters)
-		local charBytesLen, char, isDelimiter, buffer, prevBackslash = nil, nil, nil, "", false
+	get = function(self, delimiters, escapeBackslash)
+		local char, isDelimiter, buffer, prevBackslash = nil, nil, "", false
 		while not self:eof() do
-			charBytesLen = utf8charbytes(self.text, self.position)
-			char = strsub(self.text, self.position, self.position + charBytesLen - 1)
+			self.nextCharLen = utf8charbytes(self.text, self.position)
+			char = strsub(self.text, self.position, self.position + self.nextCharLen - 1)
 
-			isDelimiter = false
-			for _, delimiter in pairs(delimiters) do
-				if char == delimiter then
-					isDelimiter = true
-					break
+			if delimiters then
+				isDelimiter = false
+				for _, delimiter in pairs(delimiters) do
+					if char == delimiter then
+						isDelimiter = true
+						break
+					end
 				end
 			end
 
 			if not isDelimiter then
-				self.position = self.position + charBytesLen
-				if char == "\\" then
+				self.position = self.position + self.nextCharLen
+				self.nextCharLen = nil
+				if escapeBackslash and char == "\\" then
 					if prevBackslash then
 						prevBackslash = false
 						buffer = buffer .. char
@@ -355,7 +358,8 @@ local readerMethods = {
 				end
 			else
 				if prevBackslash then
-					self.position = self.position + charBytesLen
+					self.position = self.position + self.nextCharLen
+					self.nextCharLen = nil
 					prevBackslash = false
 					buffer = buffer .. char
 				else
@@ -369,17 +373,54 @@ local readerMethods = {
 
 	peek = function(self)
 		if self:eof() then return end
-		local charBytesLen = utf8charbytes(self.text, self.position)
-		return strsub(self.text, self.position, self.position + charBytesLen - 1)
+		if not self.nextCharLen then
+			self.nextCharLen = utf8charbytes(self.text, self.position)
+		end
+		return strsub(self.text, self.position, self.position + self.nextCharLen - 1)
 	end,
 
 	ignore = function(self, length)
 		local i = 1
 		while i <= length do
 			if self:eof() then break end
-			self.position = self.position + utf8charbytes(self.text, self.position)
+
+			if not self.nextCharLen then
+				self.nextCharLen = utf8charbytes(self.text, self.position)
+			end
+			self.position = self.position + self.nextCharLen
+			self.nextCharLen = nil
 			i = i + 1
 		end
+	end,
+
+	ignore1 = function(self)
+		if self:eof() then return end
+
+		if not self.nextCharLen then
+			self.nextCharLen = utf8charbytes(self.text, self.position)
+		end
+		self.position = self.position + self.nextCharLen
+		self.nextCharLen = nil
+	end,
+
+	getNext = function(self)
+		if self:eof() then return end
+		if not self.nextCharLen then
+			self.nextCharLen = utf8charbytes(self.text, self.position)
+		end
+		local nextChar = strsub(self.text, self.position, self.position + self.nextCharLen - 1)
+		self.position = self.position + self.nextCharLen
+		self.nextCharLen = nil
+		return nextChar
+	end,
+
+	tell = function(self)
+		return self.position
+	end,
+
+	seek = function(self, position)
+		self.position = position
+		self.nextCharLen = nil
 	end,
 
 	construct = function(self, s)
@@ -390,7 +431,15 @@ local readerMethods = {
 		self.text = s
 		self.position = 1
 		self.length = strlen(self.text)
+		self.nextCharLen = nil
 	end,
+
+	destroy = function(self)
+		self.text = nil
+		self.position = nil
+		self.length = nil
+		self.nextCharLen = nil
+	end
 }
 
 local function utf8reader(s)
@@ -399,7 +448,10 @@ local function utf8reader(s)
 		error("bad argument #1 to 'utf8reader' (string expected, got ".. type(s).. ")")
 	end
 
-	local reader = readerMethods
+	local reader = {}
+	for name, closure in pairs(readerMethods) do
+		reader[name] = closure
+	end
 	reader:construct(s)
 
 	return reader
