@@ -52,7 +52,7 @@ function WordGroupsParser:Parse(raw)
                 end
 
                 if not assoc["-"][normalized] then
-                    table.insert(parsedWordGroup["-"], normalized)
+                    table.insert(parsedWordGroup["-"], word)
                     assoc["-"][normalized] = true
                     normalizedWords = normalizedWords .. "-" .. normalized
                     addedNegate = true
@@ -94,14 +94,31 @@ function WordGroupsParser:Parse(raw)
 end
 
 function WordGroupsParser:GetWord()
-    local c  = self.reader:peek()
+    local c, c2 = self.reader:peek(), nil
     local word = {{}, 0}
     local normalized = ""
-    local start, spaceSequence = true, nil
+    local start, spaceSequence, isSpace = true, nil, nil
 
     while c ~= "," and c ~= "&" and c ~= "-" do
         self.reader:ignore1()
-        if Chars:IsSpace(c) then
+        if c == "\\" then
+            isSpace = false
+            if not self.reader:eof() then
+                c2 = self.reader:peek()
+                if c2 == "," or c2 == "&" or c2 == "-" then
+                    c = c2
+                    c2 = nil
+                    self.reader:ignore1()
+                elseif c2 == "\\" then
+                    c2 = nil
+                    self.reader:ignore1()
+                end
+            end
+        else
+            isSpace = nil
+        end
+
+        if isSpace ~= false and Chars:IsSpace(c) then
             if not spaceSequence then spaceSequence = true end
         else
             if spaceSequence then
@@ -118,10 +135,13 @@ function WordGroupsParser:GetWord()
             word[2] = word[2] + 1
             normalized = normalized .. c
         end
-        if self.reader:eof() then
-            break
+        if not c2 then
+            if self.reader:eof() then break end
+            c = self.reader:peek()
+        else
+            c = c2
+            c2 = nil
         end
-        c = self.reader:peek()
     end
 
     return word, normalized

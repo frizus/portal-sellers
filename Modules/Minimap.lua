@@ -1,7 +1,7 @@
 local addonName, addon = ...
 local Minimap = {}
 addon.Minimap = Minimap
-local Widget, DB = addon.Widget, addon.param
+local Widget, DB, Tracker = addon.Widget, addon.param, addon.Tracker
 
 function Minimap:Toggle(show)
     if show then
@@ -24,8 +24,7 @@ function Minimap:Hide()
 end
 
 function Minimap:OnLeftClick()
-    addon.Tracker:Toggle()
-    addon:ToggleTrackEvents("trackerWindow")
+    Tracker:Toggle()
 end
 
 function Minimap:OnTooltip()

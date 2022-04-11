@@ -20,13 +20,10 @@ method.OnRelease = function(self)
     self:ReleaseScroll()
 end
 method.ReleaseChildren = function(self)
-    if Table:NotEmpty(self.children) then
-        for i = 1, #self.children do
-            local child = self.children[i]
-            child.mt, child.mr, child.ml = nil, nil, nil
-            child:Release()
-            self.children[i] = nil
-        end
+    for i, child in pairs(self.children) do
+        child.mt, child.mr, child.ml = nil, nil, nil
+        child:Release()
+        self.children[i] = nil
     end
 end
 method.SetWidth = function(self, value, fill)
@@ -87,9 +84,7 @@ method.Scroll = function(self, haveScroll)
     if haveScroll then
         self.haveScroll = true
         if not self.scrollWidget then
-            self.scrollWidget = Widget:Create("ScrollFrame", {
-                parent = self.frame,
-            })
+            self.scrollWidget = Widget:Create(type(haveScroll) == "string" and haveScroll or "ScrollFrame", {parent = self.frame})
             self.scrollWidget:SetPoint("TOPLEFT")
             self.scrollWidget:SetPoint("BOTTOMRIGHT")
         end

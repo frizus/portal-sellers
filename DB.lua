@@ -8,7 +8,6 @@ DB.default = {
     trackerEnabled = true,
     trackedMessageLifetime = 120,
     trackerRefreshRate = 2,
-    trackerHideChannel = false,
     trackerHideSimilarMessages = false,
     trackerFontSize = 12.8,
     trackerWindowRect = {
@@ -24,6 +23,7 @@ DB.default = {
         show = true,
         minimapPos = 225,
     },
+    highlightKeywords = false,
 }
 
 function DB:PLAYER_LOGOUT()
@@ -55,10 +55,10 @@ end
 
 -- conversion from version 1.57 to 1.58
 function DB:ConvertOldParameters()
-    if DBparam.profileKeys ~= nil then
+    if DBparam.profileKeys then
         DBparam.profileKeys = nil
     end
-    if DBparam.global ~= nil then
+    if DBparam.global then
         local conversion = {
             ["globalswitch"] = "trackerEnabled",
             ["max_topic_live_secs"] = "trackedMessageLifetime",
@@ -104,12 +104,42 @@ function DB:CopyDefault(default, params)
 end
 
 function DB:ConvertFilterGroups()
-
+    if DBparam.keywords then
+        DBparam.filterGroups = {}
+        local filterGroup
+        local aliasSeparatorPos
+        local alias, wordGroupsString
+        for tag, keyword in pairs(DBparam.keywords) do
+            aliasSeparatorPos = string.find(tag, ":", 1, true)
+            if aliasSeparatorPos and keyword["alias"] ~= nil then
+                alias = string.sub(tag, 1, aliasSeparatorPos - 1)
+                wordGroupsString = string.sub(tag, aliasSeparatorPos + 1)
+            else
+                alias = nil
+                wordGroupsString = tostring(tag)
+            end
+            if alias ~= "" and wordGroupsString ~= "" then
+                filterGroup = {
+                    alias = alias,
+                    disabled = keyword["active"] ~= true and true or nil,
+                    wordGroupsString = wordGroupsString,
+                    wordSearch = nil,
+                    removeShiftLinks = nil,
+                    classes = nil,
+                    blinkInTaskbarWhenFound = nil,
+                }
+                DBparam.filterGroups[addon.FilterGroupForm:CreateTag(filterGroup)] = filterGroup
+            end
+            DBparam.keywords[tag] = nil
+        end
+        DBparam.keywords = nil
+    end
 end
 
 function DB:SaveVariables()
     self:RemoveDefault(DBparam, self.default)
-    self:CopyParams(DBparam, _G[savedVariableName])
+    _G[savedVariableName] = DBparam
+    DBparam = nil
 end
 
 function DB:RemoveDefault(params, default)

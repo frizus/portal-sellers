@@ -1,17 +1,34 @@
 local addonName, addon = ...
 local MessageParser = addon.MessageParser
 
-function MessageParser:GetFormattedMessage()
+function MessageParser:GetFormattedMessage(highlighted)
     local s = ""
-    if self.base.extraLayerType[0] then
-        s = s .. self:OutputExtra(0)
-    end
-    for i, char in pairs(self.base.chars) do
-        if char ~= " " then
-            s = s .. char
-        end
-        if self.base.extraLayerType[i] then
-            s = s .. self:OutputExtra(i)
+    local chars = highlighted and self.highlighted or self.chars
+    for _, c in pairs(chars) do
+        if type(c) ~= "table" then
+            s = s .. c
+        else
+            if c[1] == self.colorBegin then
+                s = s .. "|c" .. c[2]
+            elseif c[1] == self.colorEnd then
+                s = s .. "|r"
+            elseif c[1] == self.shiftLinkBegin then
+                s = s .. "|H" .. c[2] .. "|h"
+            elseif c[1] == self.texture then
+                s = s .. "|T" .. c[2] .. "|t"
+            elseif c[1] == self.shiftLinkEnd then
+                s = s .. "|h"
+            elseif c[1] == self.raidTag then
+                if ICON_LIST then
+                    s = s .. ICON_LIST[ICON_TAG_LIST[c[2]]] .. "0:0:0:0" .. "|t"
+                end
+            elseif c[1] == self.newline then
+                s = s .. "|n"
+            elseif c[1] == self.battleNetTagRedundantEnd then
+                s = s .. "|k"
+            elseif c[1] == self.textureRedundantEnd then
+                s = s .. "|t"
+            end
         end
     end
     return s
@@ -19,45 +36,14 @@ end
 
 function MessageParser:GetSearchMessage(noShiftLinks)
     local s = ""
-    local chars = (noShiftLinks and self.parseNoShiftLinks) and self.noSL.chars or self.base.chars
-    for i, char in pairs(chars) do
-        if char == "|" then
-            s = s .. "|"
-        end
-        s = s .. char
-    end
-    return s
-end
-
-function MessageParser:OutputExtra(index)
-    local s, value = "", nil
-    if self.base.extraLayerType[index] then
-        for i, type in pairs(self.base.extraLayerType[index]) do
-            value = self.base.extraLayerValue[index][i]
-            if type == "space" then
-                if not value then
-                    print(index,i)
-                end
-                s = s .. value
-            elseif type == "colorBegin" then
-                s = s .. "|c" .. value
-            elseif type == "colorEnd" then
-                s = s .. "|r"
-            elseif type == "shiftLinkBegin" then
-                s = s .. "|H" .. value .. "|h"
-            elseif type == "texture" then
-                s = s .. "|T" .. value .. "|t"
-            elseif type == "shiftLinkEnd" then
-                s = s .. "|h"
-            elseif type == "raidTag" then
-                if ICON_LIST then
-                    s = s .. ICON_LIST[ICON_TAG_LIST[value]] .. "0:0:0:0" .. "|t"
-                end
-            elseif type == "battleNetTagRedundantEnd" then
-                s = s .. "|k"
-            elseif type == "textureRedundantEnd" then
-                s = s .. "|t"
+    local blocks = noShiftLinks and self.noSL.blocks or self.withSL.blocks
+    for _, block in pairs(blocks) do
+        s = s .. "|cffFFFF00–|r"
+        for _, c in pairs(block[1]) do
+            if c == "|" then
+                s = s .. "|"
             end
+            s = s .. c
         end
     end
     return s

@@ -1,13 +1,28 @@
 local addonName, addon = ...
 local Widget, L, DB, TrackerList = addon.Widget, addon.L, addon.param, addon.TrackerList
 
+local function frame_OnUpdate(self)
+    local widget = self.widget
+    local px, py = GetCursorPosition()
+    if px ~= widget.lastMouseX or py ~= widget.lastMouseY then
+        widget.lastMouseX = px
+        widget.lastMouseY = py
+        local widthChanged = widget:SetListWidth(widget:GetWidth())
+        local heightChanged = widget:SetListHeight(widget:GetHeight())
+        if widthChanged or heightChanged then
+            widget:UpdateListLayout()
+        end
+    end
+end
 local function frame_OnMouseDown(self, mouseButton)
     if mouseButton == "LeftButton" then
         self:StartMoving()
+        self:SetScript("OnUpdate", frame_OnUpdate)
     end
 end
 local function frame_OnMouseUp(self, mouseButton)
     if mouseButton == "LeftButton" then
+        self:SetScript("OnUpdate", nil)
         self:StopMovingOrSizing()
         self.widget:SavePosAndSize()
     end
@@ -34,22 +49,29 @@ local function moverOrSizer_OnMouseUp(self, mouseButton)
     if mouseButton == "LeftButton" then
         local frame = self:GetParent()
         frame:StopMovingOrSizing()
+        frame:SetScript("OnUpdate", nil)
         frame.widget:SavePosAndSize()
     end
 end
 local function sizerBottomRight_OnMouseDown(self, mouseButton)
     if mouseButton == "LeftButton" then
-        self:GetParent():StartSizing("BOTTOMRIGHT")
+        local frame = self:GetParent()
+        frame:SetScript("OnUpdate", frame_OnUpdate)
+        frame:StartSizing("BOTTOMRIGHT")
     end
 end
 local function sizerBottom_OnMouseDown(self, mouseButton)
     if mouseButton == "LeftButton" then
-        self:GetParent():StartSizing("BOTTOM")
+        local frame = self:GetParent()
+        frame:SetScript("OnUpdate", frame_OnUpdate)
+        frame:StartSizing("BOTTOM")
     end
 end
 local function sizerRight_OnMouseDown(self, mouseButton)
     if mouseButton == "LeftButton" then
-        self:GetParent():StartSizing("RIGHT")
+        local frame = self:GetParent()
+        frame:SetScript("OnUpdate", frame_OnUpdate)
+        frame:StartSizing("RIGHT")
     end
 end
 
@@ -62,10 +84,11 @@ method.OnAcquire = function(self)
     self:SetHeight(DB.trackerWindowRect.height)
     self:SetPoint("TOP", self.frame:GetParent(), "BOTTOM", 0, DB.trackerWindowRect.top)
     self:SetPoint("LEFT", self.frame:GetParent(), "LEFT", DB.trackerWindowRect.left, 0)
-
     self:TogglePower()
 end
 method.OnRelease = function(self)
+    self.lastMouseX = nil
+    self.lastMouseY = nil
     self:ReleaseTracker()
 end
 method.TogglePower = function(self)
@@ -87,6 +110,29 @@ method.SavePosAndSize = function(self)
     DB.trackerWindowRect.height = frame:GetHeight()
     DB.trackerWindowRect.top = frame:GetTop()
     DB.trackerWindowRect.left = frame:GetLeft()
+end
+method.SetWidth = function(self, value, fill)
+    if fill then
+        self.frame:SetWidth(value)
+        self.width = "fill"
+    else
+        if self.width ~= value then
+            self.width = value
+            if value and value ~= "fill" then
+                self.frame:SetWidth(value)
+            end
+        end
+    end
+    self:SetListWidth(value, fill)
+end
+method.SetHeight = function(self, value)
+    if self.height ~= value then
+        self.height = value
+        if value then
+            self.frame:SetHeight(value)
+        end
+    end
+    self:SetListHeight(value)
 end
 
 Widget:RegisterType("Tracker", function()

@@ -61,12 +61,8 @@ function Widget:ReleaseWidget(widget)
         widget:OnRelease()
     end
 
-    for eventName in pairs(widget.handlersObject) do
-        widget.handlersObject[eventName] = nil
-    end
-    for eventName in pairs(widget.handlersMethod) do
-        widget.handlersMethod[eventName] = nil
-    end
+    wipe(widget.handlersObject)
+    wipe(widget.handlersMethod)
     f:ClearAllPoints()
     f:Hide()
     f:SetParent(nil)

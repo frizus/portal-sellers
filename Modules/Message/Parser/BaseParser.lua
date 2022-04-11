@@ -2,6 +2,16 @@ local addonName, addon = ...
 local Table = addon.Table
 local MessageParser = addon.MessageParser
 
+MessageParser.colorBegin = 1
+MessageParser.colorEnd = 2
+MessageParser.shiftLinkBegin = 3
+MessageParser.shiftLinkEnd = 4
+MessageParser.texture = 5
+MessageParser.battleNetTagRedundantEnd = 6
+MessageParser.textureRedundantEnd = 7
+MessageParser.raidTag = 8
+MessageParser.newline = 9
+
 function MessageParser:BaseParser()
     local c, valid
     local simple
@@ -23,20 +33,19 @@ function MessageParser:BaseParser()
                 local color
                 valid, color = self:ParseColor()
                 if valid then
-                    self:AddExtra("colorBegin", color)
+                    self:Add(color, self.colorBegin)
                     self:CleanBuffer()
                 else
                     self:AddFromBuffer()
                 end
             elseif c == "r" then
-                self:AddExtra("colorEnd")
+                self:Add(nil, self.colorEnd)
                 self:CleanBuffer()
             elseif c == "H" then
                 local shiftLink
                 valid, shiftLink = self:ParseShiftLink()
                 if valid then
-                    self:IncreaseShiftLinkLevel()
-                    self:AddExtra("shiftLinkBegin", shiftLink)
+                    self:Add(shiftLink, self.shiftLinkBegin)
                     self:CleanBuffer()
                 else
                     self:AddFromBuffer()
@@ -45,7 +54,7 @@ function MessageParser:BaseParser()
                 local texture
                 valid, texture = self:ParseTexture()
                 if valid then
-                    self:AddExtra("texture", texture)
+                    self:Add(texture, self.texture)
                     self:CleanBuffer()
                 else
                     self:AddFromBuffer()
@@ -61,17 +70,17 @@ function MessageParser:BaseParser()
                     self:AddFromBuffer()
                 end
             elseif c == "h" then
-                self:DecreaseShiftLinkLevel()
-                self:AddExtra("shiftLinkEnd")
+                self:Add(nil, self.shiftLinkEnd)
                 self:CleanBuffer()
             elseif c == "k" then
-                self:AddExtra("battleNetTagRedundantEnd")
+                self:Add(nil, self.battleNetTagRedundantEnd)
                 self:CleanBuffer()
             elseif c == "t" then
-                self:AddExtra("textureRedundantEnd")
+                self:Add(nil, self.textureRedundantEnd)
                 self:CleanBuffer()
             elseif c == "n" then
-                self:Add("\n")
+                self:Add(nil, self.newline)
+                self:CleanBuffer()
             else
                 self:AddFromBuffer()
                 simple = true
@@ -85,7 +94,7 @@ function MessageParser:BaseParser()
                         self:Add("{")
                     end
                 end
-                self:AddExtra("raidTag", tag)
+                self:Add(tag, self.raidTag)
                 self:CleanBuffer()
             else
                 self:AddFromBuffer()

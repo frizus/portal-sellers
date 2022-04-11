@@ -2,12 +2,15 @@ local addonName, addon = ...
 local Options = {}
 addon.Options = Options
 local Widget, L, Minimap = addon.Widget, addon.L, addon.Minimap
+local Message, FilterGroup, DB = addon.Message, addon.FilterGroup, addon.param
+local MessageParser, Tracker = addon.MessageParser, addon.Tracker
 
 function Options:InitBlizPanel()
     local widthMultiplier = 170
     self:Panel({
         leftPanelName = L["bliz_options_panel_name"],
         title = L["bliz_options_title"],
+        setHandler = self.OnSetOptions,
         children = {
             {
                 type = "Text",
@@ -63,18 +66,6 @@ function Options:InitBlizPanel()
                 children = {
                     {
                         type = "Checkbox",
-                        param = "trackerHideChannel",
-                        title = L["bliz_options_tracker_hide_channel"],
-                        tooltip = string.format(
-                            L["bliz_options_tracker_hide_channel_tooltip"],
-                            addon.DB.default.trackerHideChannel and
-                                L["bliz_options_toggle_enabled"] or
-                                L["bliz_options_toggle_disabled"]
-                        ),
-                        width = "fill",
-                    },
-                    {
-                        type = "Checkbox",
                         param = "trackerHideSimilarMessages",
                         title = L["bliz_options_tracker_hide_similar_messages"],
                         tooltip = string.format(
@@ -84,15 +75,7 @@ function Options:InitBlizPanel()
                                 L["bliz_options_toggle_disabled"]
                         ),
                         width = "fill",
-                    }
-                }
-            },
-            {
-                type = "Container",
-                layout = "Flow",
-                width = widthMultiplier,
-                marginTop = 10,
-                children = {
+                    },
                     {
                         type = "Checkbox",
                         param = "doTrackWhenClosed",
@@ -106,6 +89,7 @@ function Options:InitBlizPanel()
                         width = "fill",
                         onSet = function(value)
                             addon:ToggleTrackEvents("option")
+                            addon.Tracker:ToggleTimer()
                         end
                     },
                 }
@@ -146,6 +130,26 @@ function Options:InitBlizPanel()
                 }
             },
             {
+                type = "Container",
+                layout = "Flow",
+                width = widthMultiplier,
+                marginTop = 10,
+                children = {
+                    {
+                        type = "Checkbox",
+                        param = "highlightKeywords",
+                        title = L["bliz_options_highlight_keywords"],
+                        tooltip = string.format(
+                                L["bliz_options_highlight_keywords_tooltip"],
+                                addon.DB.default.highlightKeywords and
+                                        L["bliz_options_toggle_enabled"] or
+                                        L["bliz_options_toggle_disabled"]
+                        ),
+                        width = "fill",
+                    },
+                }
+            },
+            {
                 type = "Separator",
             },
             {
@@ -160,6 +164,7 @@ function Options:Panel(arg)
     local options = {
         leftPanelName = arg.leftPanelName,
         title = arg.title,
+        setHandler = arg.setHandler,
         children = arg.children,
     }
     local panelWidget
@@ -179,4 +184,112 @@ function Options:Panel(arg)
     InterfaceOptions_AddCategory(panelWidget:GetFrame())
 
     return panelWidget
+end
+
+function Options.OnSetOptions(panel)
+    if not addon.IsNotBusy() then
+        addon:Locked(addon.IsNotBusy, Options.OnSetOptions, {panel})
+        return
+    end
+    addon.busy = true
+    local changedValues = {}
+    for param in pairs(panel.panelChangedInputs) do
+        local newValue, oldValue = panel.panelChangedInputs[param], nil
+        oldValue = addon.Table:Get(DB, param)
+        addon.Table:Set(DB, param, newValue)
+        if oldValue ~= newValue and not (oldValue == nil and newValue == false) then
+            addon.Table:Set(changedValues, param, true)
+            if panel.panelInputOnSetHandlers[param] then
+                panel.panelInputOnSetHandlers[param](newValue)
+            end
+        end
+        panel.panelChangedInputs[param] = nil
+    end
+
+    if Message.trackedMessagesLen ~= 0 then
+        local updateLayout, updateOutput, updateFontSize
+        if changedValues.trackerHideSimilarMessages then
+            updateLayout = true
+            updateOutput = true
+            for _, message in pairs(Message.trackedMessages) do
+                if DB.trackerHideSimilarMessages then
+                    message["variants"] = nil
+                    message["variantsLen"] = nil
+                    message["variantKey"] = nil
+                    message["variantsOrder"] = nil
+                    message["variantsSorted"] = nil
+                else
+                    message["variantKey"] = message["original"]
+                    message["variants"] = {
+                        [message["variantKey"]] = {
+                            message = message["message"],
+                            original = message["original"],
+                            updated = message["updated"],
+                            channel = message["channel"],
+                            channelsSorted = false,
+                            channelsLen = 1,
+                            channels = {
+                                [message["channel"]] = {
+                                    channel = message["channel"],
+                                    sort = type(message["channel"]) == "number" and string.format("Z%02d", message["channel"]) or message["channel"],
+                                    updated = message["updated"],
+                                }
+                            }
+                        }
+                    }
+                    message["variantsLen"] = 1
+                    message["variantsSorted"] = false
+                end
+            end
+        end
+
+        if changedValues.highlightKeywords then
+            if not updateLayout then updateLayout = true end
+            if not updateOutput then updateOutput = true end
+            local wordGroupString, wordGroup, filterGroup
+            for _, message in pairs(Message.trackedMessages) do
+                if DB.highlightKeywords then
+                    wordGroupString = message["matchInfo"]["wordGroup"]
+                    if wordGroupString then
+                        wordGroup = FilterGroup.wordGroups[wordGroupString]
+                        if wordGroup["&"] then
+                            local messageParser = MessageParser:Create(message["original"], FilterGroup.haveWithShiftLinks, FilterGroup.haveRemoveShiftLinks, true)
+                            messageParser:Parse()
+                            filterGroup = DB.filterGroups[message["matchInfo"]["filterGroupKey"]]
+                            messageParser:Highlight(filterGroup["removeShiftLinks"], wordGroup["&"], nil, filterGroup["wordSearch"])
+                            message["message"] = messageParser:GetFormattedMessage(true)
+                            if not DB.trackerHideSimilarMessages then
+                                message["variants"][message["variantKey"]]["message"] = message["message"]
+                            end
+                            messageParser:Destroy()
+                            messageParser = nil
+                        end
+                    end
+                else
+                    message["message"] = message["original"]
+                    if not DB.trackerHideSimilarMessages then
+                        message["variants"][message["variantKey"]]["message"] = message["message"]
+                    end
+                end
+            end
+        end
+
+        if changedValues.trackerFontSize then
+            if not updateLayout then updateLayout = true end
+            updateFontSize = true
+        end
+
+        if changedValues.trackerRefreshRate and DB.trackerWindowOpened and Tracker.timer then
+            addon:CancelTimer(Tracker.timer)
+            if Tracker.timerType ~= "opened" then
+                Tracker.timerType = "opened"
+            end
+            Tracker.timer = addon:NewTimer(DB.trackerRefreshRate, Tracker.Tick, GetTime() % DB.trackerRefreshRate)
+        end
+
+        if updateLayout and DB.trackerWindowOpened then
+            Tracker:Update(updateOutput, updateFontSize)
+        end
+    end
+    addon.busy = false
 end

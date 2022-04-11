@@ -9,7 +9,7 @@
 
 Libs\LibStub\LibStub.lua
 Libs\UTF8\UTF8.xml
-#Libs\LibDeformat-3.0\LibDeformat-3.0.xml
+Libs\LibDeformat-3.0\LibDeformat-3.0.xml
 
 Locales.lua
 
@@ -18,26 +18,39 @@ Triton.lua
 Misc\Chars.lua
 Misc\Table.lua
 Misc\Widget.lua
+Misc\Mixins\ScrollFrameBasic.lua
+Misc\Mixins\TrackerLineTick.lua
 Misc\Mixins\TrackerList.lua
 Misc\Mixins\WidgetTooltip.lua
 
 DB.lua
 
-Modules\Tracker.lua
-Modules\Minimap.lua
-Modules\Options.lua
+Modules\Tracker\Tracker.lua
+Modules\Tracker\Fill.lua
+Modules\Tracker\Timer.lua
+Modules\Tracker\TimerClosed.lua
 
+Modules\Minimap.lua
+
+Modules\FilterGroups\Form.lua
 Modules\FilterGroups\Parser.lua
+Modules\FilterGroups\Matcher.lua
+Modules\FilterGroups\Matcher\Init.lua
 
 Modules\Message\Parser.lua
 Modules\Message\Parser\BaseParser.lua
 Modules\Message\Parser\BattleNetTag.lua
 Modules\Message\Parser\Color.lua
+Modules\Message\Parser\Highlight.lua
 Modules\Message\Parser\RaidTag.lua
 Modules\Message\Parser\ShiftLink.lua
 Modules\Message\Parser\Output.lua
 Modules\Message\Parser\Texture.lua
 Modules\Message\Hooks.lua
+Modules\Message\Hooks\Changes.lua
+Modules\Message\Hooks\Who.lua
+
+Modules\Options.lua
 
 Widgets\BlizOptionsPanel.lua
 Widgets\Checkbox.lua
@@ -49,5 +62,7 @@ Widgets\Separator.lua
 Widgets\Slider.lua
 Widgets\Text.lua
 Widgets\Tracker.lua
+Widgets\TrackerLine.lua
+Widgets\TrackerScrollFrame.lua
 
 ##EOF

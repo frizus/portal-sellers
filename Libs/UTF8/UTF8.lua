@@ -322,15 +322,15 @@ local readerMethods = {
 	end,
 
 	get = function(self, delimiters, escapeBackslash)
-		local char, isDelimiter, buffer, prevBackslash = nil, nil, "", false
+		local c, isDelimiter, buffer, backslashed = nil, nil, "", nil
 		while not self:eof() do
 			self.nextCharLen = utf8charbytes(self.text, self.position)
-			char = strsub(self.text, self.position, self.position + self.nextCharLen - 1)
+			c = strsub(self.text, self.position, self.position + self.nextCharLen - 1)
 
 			if delimiters then
 				isDelimiter = false
 				for _, delimiter in pairs(delimiters) do
-					if char == delimiter then
+					if c == delimiter then
 						isDelimiter = true
 						break
 					end
@@ -340,28 +340,28 @@ local readerMethods = {
 			if not isDelimiter then
 				self.position = self.position + self.nextCharLen
 				self.nextCharLen = nil
-				if escapeBackslash and char == "\\" then
-					if prevBackslash then
-						prevBackslash = false
-						buffer = buffer .. char
+				if escapeBackslash and c == "\\" then
+					if backslashed then
+						backslashed = nil
+						buffer = buffer .. c
 					elseif self:eof() then
-						buffer = buffer .. char
+						buffer = buffer .. c
 					else
-						prevBackslash = true
+						backslashed = true
 					end
 				else
-					if prevBackslash then
-						prevBackslash = false
+					if backslashed then
+						backslashed = nil
 						buffer = buffer .. "\\"
 					end
-					buffer = buffer .. char
+					buffer = buffer .. c
 				end
 			else
-				if prevBackslash then
+				if backslashed then
 					self.position = self.position + self.nextCharLen
 					self.nextCharLen = nil
-					prevBackslash = false
-					buffer = buffer .. char
+					backslashed = nil
+					buffer = buffer .. c
 				else
 					break
 				end

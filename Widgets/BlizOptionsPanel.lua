@@ -21,27 +21,19 @@ method.OnAcquire = function(self, options)
     f.default = frame_Default
     self.titleText = options.title
     self.childrenConfig = options.children
+    self.setHandler = options.setHandler
 end
 method.OnRelease = function(self)
     local f = self.frame
     f.name, f.parent = nil, nil
     f.okay, f.cancel, f.refresh, f.default = nil, nil, nil, nil
     self.titleText, self.childrenConfig = nil, nil
-    for name in pairs(self.panelInputNames) do
-        self.panelInputNames[name] = nil
-    end
-    for param in pairs(self.panelChangedInputs) do
-        self.panelChangedInputs[param] = nil
-    end
-    for param in pairs(self.panelInput) do
-        self.panelInput[param] = nil
-    end
-    for param in pairs(self.panelInputOnSetHandlers) do
-        self.panelInputOnSetHandlers[param] = nil
-    end
-    for param in pairs(self.panelInputSetValueClosures) do
-        self.panelInputSetValueClosures[param] = nil
-    end
+    self.setHandler = nil
+    wipe(self.panelInputNames)
+    wipe(self.panelChangedInputs)
+    wipe(self.panelInput)
+    wipe(self.panelInputOnSetHandlers)
+    wipe(self.panelInputSetValueClosures)
     self:ReleaseTitle()
     self:ReleaseContent()
 end
@@ -91,9 +83,13 @@ method.ProcessInput = function(self, config)
     end
 end
 method.Okay = function(self)
+    if self.setHandler then
+        self.setHandler(self)
+        return
+    end
     for param in pairs(self.panelChangedInputs) do
         local newValue, oldValue = self.panelChangedInputs[param], nil
-        if self.panelInputOnSetHandlers[param] then
+        if self.globalOnSet or self.panelInputOnSetHandlers[param] then
             oldValue = Table:Get(DB, param)
         end
         Table:Set(DB, param, newValue)

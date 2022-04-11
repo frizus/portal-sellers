@@ -15,6 +15,9 @@ L["welcome_message"] = "|cFF33FF99%s (%s)|r: type /triton to show tracker"
 L["bliz_options_panel_name"] = addonName
 L["bliz_options_title"] = addonName .. " (" .. GetAddOnMetadata(addonName, "Version") .. ")"
 L["tracker_title"] = addonName
+L["say"] = strlower(SAY)
+L["yell"] = strlower(YELL)
+L["level_abbr"] = strlower(LEVEL_ABBR)
 
 if gameLocale == "ruRU" then
     L["welcome_message"] = "|cFF33FF99%s (%s)|r: введите /triton для вызова трекера"
@@ -25,8 +28,6 @@ if gameLocale == "ruRU" then
     L["bliz_options_tracked_message_lifetime_tooltip"] = "Сколько времени найденное сообщение остается в трекере (по умолчанию %d |4секунда:секунды:секунд;)"
     L["bliz_options_tracking_refresh_rate"] = "Скорость обновления"
     L["bliz_options_tracking_refresh_rate_tooltip"] = "Как быстро обновляется трекер: добавляются найденные и удаляются устаревшие сообщения (по умолчанию раз в %d |4секунду:секунды:секунд;)"
-    L["bliz_options_tracker_hide_channel"] = "Не показывать канал"
-    L["bliz_options_tracker_hide_channel_tooltip"] = "Не выводить канал у найденного сообщения в трекере (по умолчанию %s)"
     L["bliz_options_tracker_hide_similar_messages"] = "Не запоминать похожие"
     L["bliz_options_tracker_hide_similar_messages_tooltip"] = "Трекер группирует сообщения от одного игрока по одинаковым ключевым словам. Если включить, то только последнее сообщение группы будет запоминаться (по умолчанию %s)"
     L["bliz_options_minimap_show"] = "Значок на миникарте"
@@ -35,6 +36,8 @@ if gameLocale == "ruRU" then
     L["bliz_options_show_start_message_tooltip"] = "Показывать стартовое сообщение в чате (по умолчанию %s)"
     L["bliz_options_do_track_when_closed"] = "Всегда отслеживать"
     L["bliz_options_do_track_when_closed_tooltip"] = "Отслеживать сообщения даже когда окно трекера закрыто (по умолчанию %s)"
+    L["bliz_options_highlight_keywords"] = "Подсвечивать"
+    L["bliz_options_highlight_keywords_tooltip"] = "Выделение искомых слов в найденных сообщениях"
     L["bliz_options_toggle_enabled"] = "включено"
     L["bliz_options_toggle_disabled"] = "выключено"
     L["bliz_options_tracker_messages_font_size"] = "Размер шрифта"
@@ -48,4 +51,5 @@ if gameLocale == "ruRU" then
         "Есть возможность задать сокращенное название для одной группы искомых слов. Оно будет выводиться в трекере вместо искомого слова.\n" ..
         "Также доступна опция поиска по целому слову: |cff00ccccOYN|r с включенной опцией найдется в |cff00ccccMC OYN BWL|r и |cff00ccccMC OYN(st) BWL|r, но не в |cff00ccccMC OYNst BWL|r.\n\n" ..
         "https://github.com/bayard/triton\n|cffca99ffTriton|r@匕首岭 (bǐ shǒu lǐng) 2020"
+    L["tracker_line_seconds"] = "%sс"
 end

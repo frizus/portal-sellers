@@ -53,3 +53,20 @@ function Table:Empty(table)
     end
     return true
 end
+
+function Table:GetSortedKeys(tbl, field, asc)
+    local keys = {}
+    for key in pairs(tbl) do table.insert(keys, key) end
+
+    if asc ~= false then
+        table.sort(keys, function(a, b)
+            return tbl[a][field] < tbl[b][field]
+        end)
+    else
+        table.sort(keys, function(a, b)
+            return tbl[a][field] > tbl[b][field]
+        end)
+    end
+
+    return keys
+end
