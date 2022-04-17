@@ -49,7 +49,7 @@ function MessageParser:Add(value, type)
     local isSpace
     if not type then
         isSpace = Chars:IsSpace(value)
-        value = strlower(value)
+        value = string.utf8lower(value)
     elseif type == self.newline then
         isSpace = true
     end

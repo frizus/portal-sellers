@@ -3,7 +3,7 @@ local Widget = addon.Widget
 local Table = addon.Table
 
 local method = {}
-method.OnAcquire = function(self, options)
+function method:OnAcquire(options)
     self:SetParent(options.parent)
     self.layout = options.layout
     self:SetWidth(options.width or "fill")
@@ -12,21 +12,22 @@ method.OnAcquire = function(self, options)
     self.mt = options.marginTop or 0
     self.mr = options.marginRight or 0
     self.ml = options.marginLeft or 0
+    self.mb = options.marginBottom or 0
 end
-method.OnRelease = function(self)
-    self.mt, self.mr, self.ml = nil, nil, nil
+function method:OnRelease()
+    self.mt, self.mr, self.ml, self.mb = nil, nil, nil, nil
     self.layout, self.haveScroll = nil, nil
     self:ReleaseChildren()
     self:ReleaseScroll()
 end
-method.ReleaseChildren = function(self)
+function method:ReleaseChildren()
     for i, child in pairs(self.children) do
         child.mt, child.mr, child.ml = nil, nil, nil
         child:Release()
         self.children[i] = nil
     end
 end
-method.SetWidth = function(self, value, fill)
+function method:SetWidth(value, fill)
     if fill then
         self.frame:SetWidth(value)
         self.width = "fill"
@@ -39,10 +40,10 @@ method.SetWidth = function(self, value, fill)
         end
     end
     if self.haveScroll then
-        self.scrollWidget:SetWidth(value)
+        self.scrollWidget:CalculateContentWidth()
     end
 end
-method.SetHeight = function(self, value)
+function method:SetHeight(value)
     if self.height ~= value then
         self.height = value
         if value then
@@ -50,25 +51,25 @@ method.SetHeight = function(self, value)
         end
     end
     if self.haveScroll then
-        self.scrollWidget:SetHeight(value)
+        self.scrollWidget:CalculateContentWidth()
     end
 end
-method.GetContentWidth = function(self)
+function method:GetContentWidth()
     if self.haveScroll then
         return self.scrollWidget:GetContentWidth()
     end
     return self.frame:GetWidth()
 end
-method.GetContentHeight = function(self)
+function method:GetContentHeight()
     return self:GetHeight()
 end
-method.GetChildrenFrame = function(self)
+function method:GetChildrenFrame()
     return self.haveScroll and self.scrollWidget:GetContentFrame() or self.frame
 end
-method.GetChildren = function(self)
+function method:GetChildren()
     return self.children
 end
-method.SetChildren = function(self, children, layoutConfig)
+function method:SetChildren(children, layoutConfig)
     self:ReleaseChildren()
     local childrenFrame = self:GetChildrenFrame()
     for i, child in ipairs(children) do
@@ -80,7 +81,7 @@ method.SetChildren = function(self, children, layoutConfig)
         table.insert(self.children, child)
     end
 end
-method.Scroll = function(self, haveScroll)
+function method:Scroll(haveScroll)
     if haveScroll then
         self.haveScroll = true
         if not self.scrollWidget then
@@ -93,25 +94,25 @@ method.Scroll = function(self, haveScroll)
         self:ReleaseScroll()
     end
 end
-method.ReleaseScroll = function(self)
+function method:ReleaseScroll()
     if self.scrollWidget then
         self.scrollWidget:Release()
         self.scrollWidget = nil
     end
 end
-method.Show = function(self)
+function method:Show()
     if self.haveScroll then
         self.scrollWidget:Show()
     end
     self.frame:Show()
 end
-method.Hide = function(self)
+function method:Hide()
     if self.haveScroll then
         self.scrollWidget:Hide()
     end
     self.frame:Hide()
 end
-method.AfterLayout = function(self, height)
+function method:AfterLayout(height)
     if self.maxHeight then
         self:SetHeight(math.min(self.maxHeight, height))
     else

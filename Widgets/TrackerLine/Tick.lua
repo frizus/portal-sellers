@@ -26,7 +26,7 @@ local function Channels(message)
     if not DB.trackerHideSimilarMessages then
         local variant = message["variants"][message["variantKey"]]
         if variant["channelsLen"] == 1 and
-            (variant["channel"] == say or variant["channel"] == yell)
+                (variant["channel"] == say or variant["channel"] == yell)
         then
             return nil
         end
@@ -50,18 +50,17 @@ local function Channels(message)
     return "|c" .. color .. "[" .. name .. "]" .. "|r"
 end
 
-TrackerLineTick.ReleaseTick = function(self)
+function TrackerLineTick:ReleaseTick()
     self.text1 = nil
     self.text2 = nil
     self.text3 = nil
     self.text4 = nil
     self.text5 = nil
-    self.message = nil
-    self.whoText = nil
+    self.id = nil
     self.haveWho = nil
     self.lastUpdated = nil
 end
-TrackerLineTick.Tick = function(self, changed, now, id)
+function TrackerLineTick:Tick(changed, now, id)
     local message, who
     if changed then
         if id then self.id = id end
@@ -70,7 +69,7 @@ TrackerLineTick.Tick = function(self, changed, now, id)
             who = addon.Message.who[message["playerInfo"]["name"]]
         end
 
-        local alias = addon.param.filterGroups[message["matchInfo"]["filterGroupKey"]]["alias"]
+        local alias = DB.filterGroups[message["matchInfo"]["filterGroupKey"]]["alias"]
         self.text1 = "|cff00cc00"
         if alias then
             self.text1 = self.text1 .. alias
@@ -79,13 +78,13 @@ TrackerLineTick.Tick = function(self, changed, now, id)
         end
         self.text1 = self.text1 .. "|r "
         self.text1 = self.text1 ..
-            "|cffca99ff[|r" ..
-            "|c" .. RAID_CLASS_COLORS[message["playerInfo"]["class"]]["colorStr"] ..
-            message["playerInfo"]["name"]
+                "|cffca99ff[|r" ..
+                "|c" .. RAID_CLASS_COLORS[message["playerInfo"]["class"]]["colorStr"] ..
+                message["playerInfo"]["name"]
         local hadWho = self.haveWho
         self.haveWho = who ~= nil
         if self.haveWho then
-            self.text2 = who["text"] .. " |cff008800"
+            self.text2 = " - " .. who["level"] .. " " .. L["level_abbr"] .. " - " .. who["area"] .. " |cff008800"
             self.text3 = "|r"
         elseif hadWho then
             self.text2 = false
@@ -116,17 +115,17 @@ TrackerLineTick.Tick = function(self, changed, now, id)
 
     if not self.haveWho then
         self:SetText(
-            self.text1 .. self.text4 ..
-            string.format(L["tracker_line_seconds"], math.floor(now - message["updated"])) ..
-            self.text5
+                self.text1 .. self.text4 ..
+                        string.format(L["tracker_line_seconds"], math.floor(now - message["updated"])) ..
+                        self.text5
         )
     else
         self:SetText(
-            self.text1 .. self.text2 ..
-            string.format(L["tracker_line_seconds"], math.floor(now - who["updated"])) ..
-            self.text4 ..
-            string.format(L["tracker_line_seconds"], math.floor(now - message["updated"])) ..
-            self.text5
+                self.text1 .. self.text2 ..
+                        string.format(L["tracker_line_seconds"], math.floor(now - who["updated"])) ..
+                        self.text4 ..
+                        string.format(L["tracker_line_seconds"], math.floor(now - message["updated"])) ..
+                        self.text5
         )
     end
 end

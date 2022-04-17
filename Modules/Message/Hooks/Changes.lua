@@ -14,9 +14,7 @@ function Message:MarkChanged(what, id)
             end
             return
         end
-        if what ~= "add" then
-            return
-        end
+        if what ~= "add" then return end
     end
 
     if not self.changed then

@@ -4,12 +4,14 @@ local DB = addon.param
 
 Tracker.cleanWhenClosedDuration = 10
 
-function Tracker:ToggleTimer()
-    if not addon.IsNotBusy() then
-        addon:Locked(addon.IsNotBusy, self.ToggleTimer, {self})
-        return
+function Tracker:ToggleTimer(skipBusy)
+    if not skipBusy then
+        if addon.isBusy then
+            addon:LockBusy(self.ToggleTimer, {self})
+            return
+        end
+        addon.busy = true
     end
-    addon.busy = true
     if addon.Message.trackedMessagesLen ~= 0 and addon.trackEvents == true then
         if DB.trackerWindowOpened then
             if self.timerType ~= "opened" then
@@ -31,18 +33,21 @@ function Tracker:ToggleTimer()
             self.timerType = false
         end
     end
-    addon.busy = false
+    if not skipBusy then
+        addon.busy = false
+    end
 end
 
 function Tracker.Tick()
-    if not addon.IsNotBusy() then return false end
+    if addon.isBusy then return false end
+    addon.busy = true
+    Tracker:Update()
+    addon.busy = false
+end
+
+function Tracker.TickClosed()
+    if addon.isBusy then return false end
     addon.busy = true
     addon.Message:Outdated()
-    if addon.Message.changed then
-        Tracker.widget:Tick(addon.Message.changed, addon.Message.trackedMessages)
-        addon.Message.changed = false
-    else
-        Tracker.widget:Tick()
-    end
     addon.busy = false
 end

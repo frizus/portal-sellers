@@ -2,18 +2,18 @@ local addonName, addon = ...
 local ScrollFrameBasic = {}
 addon.ScrollFrameBasic = ScrollFrameBasic
 
-ScrollFrameBasic.OnAcquire = function(self, options)
+function ScrollFrameBasic:OnAcquire(options)
     self:SetParent(options.parent)
     self.scrollFrame.ScrollBar:Hide()
 end
-ScrollFrameBasic.OnRelease = function(self)
+function ScrollFrameBasic:OnRelease()
     self.scrollShown = nil
     self.contentWidth = nil
 end
-ScrollFrameBasic.GetContentFrame = function(self)
+function ScrollFrameBasic:GetContentFrame()
     return self.content
 end
-ScrollFrameBasic.SetWidth = function(self, value, fill)
+function ScrollFrameBasic:SetWidth(value, fill)
     if fill then
         self.frame:SetWidth(value)
         self.width = "fill"
@@ -27,7 +27,7 @@ ScrollFrameBasic.SetWidth = function(self, value, fill)
         end
     end
 end
-ScrollFrameBasic.SetHeight = function(self, value)
+function ScrollFrameBasic:SetHeight(value)
     if self.height ~= value then
         self.height = value
         if value then
@@ -35,7 +35,7 @@ ScrollFrameBasic.SetHeight = function(self, value)
         end
     end
 end
-ScrollFrameBasic.CalculateContentWidth = function(self)
+function ScrollFrameBasic:CalculateContentWidth()
     local frameWidth = self.frame:GetWidth()
     local lastWidth = self.contentWidth
 
@@ -46,16 +46,16 @@ ScrollFrameBasic.CalculateContentWidth = function(self)
         end
     end
 end
-ScrollFrameBasic.GetContentWidth = function(self)
+function ScrollFrameBasic:GetContentWidth()
     if not self.contentWidth then
         self:CalculateContentWidth()
     end
     return self.contentWidth
 end
-ScrollFrameBasic.GetContentHeight = function(self)
+function ScrollFrameBasic:GetContentHeight()
     return self:GetHeight()
 end
-ScrollFrameBasic.ScrollToggled = function(self, contentHeight)
+function ScrollFrameBasic:ScrollToggled(contentHeight)
     self.content:SetHeight(contentHeight)
     local viewHeight = self:GetHeight()
 

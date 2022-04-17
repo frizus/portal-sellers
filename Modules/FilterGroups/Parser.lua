@@ -130,7 +130,7 @@ function WordGroupsParser:GetWord()
                 end
             end
             if start then start = nil end
-            c = strlower(c)
+            c = string.utf8lower(c)
             table.insert(word[1], c)
             word[2] = word[2] + 1
             normalized = normalized .. c

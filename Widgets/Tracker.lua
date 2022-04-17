@@ -79,19 +79,24 @@ local method = {}
 for name, closure in pairs(TrackerList) do
     method[name] = closure
 end
-method.OnAcquire = function(self)
+function method:OnAcquire()
     self:SetWidth(DB.trackerWindowRect.width)
     self:SetHeight(DB.trackerWindowRect.height)
     self:SetPoint("TOP", self.frame:GetParent(), "BOTTOM", 0, DB.trackerWindowRect.top)
     self:SetPoint("LEFT", self.frame:GetParent(), "LEFT", DB.trackerWindowRect.left, 0)
     self:TogglePower()
+    self:AddEventHandler("StartDragging", self)
+    self:AddEventHandler("StopDragging", self)
 end
-method.OnRelease = function(self)
+function method:OnRelease()
+    if self.frame:GetScript("OnUpdate") then
+        self.frame:GetScript("OnUpdate", nil)
+    end
     self.lastMouseX = nil
     self.lastMouseY = nil
     self:ReleaseTracker()
 end
-method.TogglePower = function(self)
+function method:TogglePower()
     if DB.trackerEnabled then
         self.topArea.power:SetNormalTexture([[Interface\Addons\Triton\Media\on]])
         self.topArea.power:SetHighlightTexture([[Interface\Addons\Triton\Media\on]])
@@ -104,14 +109,25 @@ method.TogglePower = function(self)
         self.topArea.title:SetTextColor(1, 0, 0, 1)
     end
 end
-method.SavePosAndSize = function(self)
+function method:StartDragging()
+    local f = self.frame
+    f:StartMoving()
+    f:SetScript("OnUpdate", frame_OnUpdate)
+end
+function method:StopDragging()
+    local f = self.frame
+    f:SetScript("OnUpdate", nil)
+    f:StopMovingOrSizing()
+    self:SavePosAndSize()
+end
+function method:SavePosAndSize()
     local frame = self.frame
     DB.trackerWindowRect.width = frame:GetWidth()
     DB.trackerWindowRect.height = frame:GetHeight()
     DB.trackerWindowRect.top = frame:GetTop()
     DB.trackerWindowRect.left = frame:GetLeft()
 end
-method.SetWidth = function(self, value, fill)
+function method:SetWidth(value, fill)
     if fill then
         self.frame:SetWidth(value)
         self.width = "fill"
@@ -125,7 +141,7 @@ method.SetWidth = function(self, value, fill)
     end
     self:SetListWidth(value, fill)
 end
-method.SetHeight = function(self, value)
+function method:SetHeight(value)
     if self.height ~= value then
         self.height = value
         if value then

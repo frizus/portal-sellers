@@ -16,7 +16,7 @@ function MessageParser:ParseColor()
         self.reader:ignore1()
 
         self:Buffer(c)
-        c2 = strlower(c)
+        c2 = string.utf8lower(c)
         if c2 == "0" or c2 == "1" or c2 == "2" or c2 == "3" or c2 == "4" or
                 c2 == "5" or c2 == "6" or c2 == "7" or c2 == "8" or c2 == "9" or
                 c2 == "a" or c2 == "b" or c2 == "c" or c2 == "d" or c2 == "e" or

@@ -8,7 +8,7 @@ end
 local function trigger_OnLeave(self)
     self.widget:HideTooltip()
 end
-WidgetTooltip.InitTooltip = function(self, trigger, title, tooltip)
+function WidgetTooltip:InitTooltip(trigger, title, tooltip)
     if type(title) == "function" then
         trigger:SetScript("OnEnter", title)
         trigger:SetScript("OnLeave", trigger_OnLeave)
@@ -20,22 +20,21 @@ WidgetTooltip.InitTooltip = function(self, trigger, title, tooltip)
             trigger:SetScript("OnLeave", trigger_OnLeave)
         end
     end
-
 end
-WidgetTooltip.RemoveTooltip = function(self, trigger)
+function WidgetTooltip:RemoveTooltip(trigger)
     self.title = nil
     self.tooltip = nil
     trigger:SetScript("OnEnter", nil)
     trigger:SetScript("OnLeave", nil)
     self:HideTooltip()
 end
-WidgetTooltip.ShowTooltip = function(self)
+function WidgetTooltip:ShowTooltip()
     GameTooltip:SetOwner(self.frame, "ANCHOR_TOPRIGHT")
     GameTooltip_AddNormalLine(GameTooltip, self.title, true)
     GameTooltip_AddColoredLine(GameTooltip, self.tooltip, TOOLTIP_DEFAULT_COLOR, true)
     GameTooltip:Show()
 end
-WidgetTooltip.HideTooltip = function(self)
+function WidgetTooltip:HideTooltip()
     if GameTooltip:GetOwner() == self.frame and GameTooltip:IsShown() then
         GameTooltip:Hide()
     end

@@ -121,17 +121,17 @@ function MessageParser:HighlightString(start, finish, colorNum)
     for i = self.highlightCursor, start - 1 do
         table.insert(self.highlighted, self.chars[i])
     end
-    table.insert(self.highlighted, {self.colorBegin, color})
+    table.insert(self.highlighted, {self.highlightBegin, color})
     for i = start, finish do
         c = self.chars[i]
         if type(c) == "table" then
             if c[1] == self.colorBegin then
-                table.insert(self.highlighted, {self.colorEnd})
+                table.insert(self.highlighted, {self.highlightEnd})
                 table.insert(self.highlighted, c)
-                table.insert(self.highlighted, {self.colorBegin, color})
+                table.insert(self.highlighted, {self.highlightBegin, color})
             elseif c[1] == self.colorEnd then
                 table.insert(self.highlighted, c)
-                table.insert(self.highlighted, {self.colorBegin, color})
+                table.insert(self.highlighted, {self.highlightBegin, color})
             else
                 table.insert(self.highlighted, c)
             end
@@ -139,7 +139,7 @@ function MessageParser:HighlightString(start, finish, colorNum)
             table.insert(self.highlighted, c)
         end
     end
-    table.insert(self.highlighted, {self.colorEnd})
+    table.insert(self.highlighted, {self.highlightEnd})
     self.highlightCursor = finish + 1
 end
 

@@ -75,13 +75,13 @@ function Widget:ReleaseWidget(widget)
 end
 
 widgetBase = {}
-widgetBase.Release = function(self)
+function widgetBase:Release()
     Widget:ReleaseWidget(self)
 end
-widgetBase.GetFrame = function(self)
+function widgetBase:GetFrame()
     return self.frame
 end
-widgetBase.AddEventHandler = function(self, eventName, object, method)
+function widgetBase:AddEventHandler(eventName, object, method)
     if type(object) == "function" then
         self.handlersObject[eventName] = nil
         self.handlersMethod[eventName] = object
@@ -90,7 +90,7 @@ widgetBase.AddEventHandler = function(self, eventName, object, method)
         self.handlersMethod[eventName] = method or eventName
     end
 end
-widgetBase.TriggerEvent = function(self, eventName, ...)
+function widgetBase:TriggerEvent(eventName, ...)
     if self.handlersMethod[eventName] then
         if self.handlersObject[eventName] then
             return self.handlersObject[eventName][self.handlersMethod[eventName]](self.handlersObject[eventName], self, ...)
@@ -99,7 +99,13 @@ widgetBase.TriggerEvent = function(self, eventName, ...)
         end
     end
 end
-widgetBase.SetParent = function(self, parent)
+function widgetBase:RemoveEventHandler(eventName)
+    if self.handlersMethod[eventName] then
+        self.handlersMethod[eventName] = nil
+        if self.handlersObject[eventName] then self.handlersObject[eventName] = nil end
+    end
+end
+function widgetBase:SetParent(parent)
     if parent then
         local frame = self.frame
         if frame:GetParent() ~= parent then
@@ -108,7 +114,7 @@ widgetBase.SetParent = function(self, parent)
         end
     end
 end
-widgetBase.SetWidth = function(self, value, fill)
+function widgetBase:SetWidth(value, fill)
     if fill then
         self.frame:SetWidth(value)
         self.width = "fill"
@@ -121,7 +127,7 @@ widgetBase.SetWidth = function(self, value, fill)
         end
     end
 end
-widgetBase.SetHeight = function(self, value)
+function widgetBase:SetHeight(value)
     if self.height ~= value then
         self.height = value
         if value then
@@ -148,7 +154,7 @@ end
 
 
 local fastBase = {}
-fastBase.Release = function(self)
+function fastBase:Release()
     Widget:FastRelease(self)
 end
 
@@ -240,7 +246,7 @@ Widget:RegisterLayout("Flow", function(containerWidget)
     end
 
     if containerWidget.AfterLayout then
-        containerWidget:AfterLayout(usedHeight + (rowMaxHeight > 0 and rowMaxHeight or 0))
+        containerWidget:AfterLayout(usedHeight + containerWidget.mb + (rowMaxHeight > 0 and rowMaxHeight or 0))
     end
 
     containerWidget:Show()

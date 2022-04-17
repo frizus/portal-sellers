@@ -48,7 +48,7 @@ local method = {}
 for name, closure in pairs(WidgetTooltip) do
     method[name] = closure
 end
-method.NumericValidator = function(self, text, minusAllowed, decimalPrecision)
+function method:NumericValidator(text, minusAllowed, decimalPrecision)
     local valid = true
     local value = ""
     local haveMinus, haveDigit, haveDot
@@ -109,7 +109,7 @@ method.NumericValidator = function(self, text, minusAllowed, decimalPrecision)
 
     return value, valid
 end
-method.OnAcquire = function(self, options)
+function method:OnAcquire(options)
     self.frame:SetParent(options.parent)
     self:SetWidth(options.width)
     self:SetHeight(44)
@@ -126,24 +126,24 @@ method.OnAcquire = function(self, options)
     self:InitTooltip(self.slider, options.title, options.tooltip)
     self.slider:SetScript("OnValueChanged", Slider_OnValueChanged)
 end
-method.OnRelease = function(self)
+function method:OnRelease()
     self.slider:SetScript("OnValueChanged", nil)
     self.value = nil
     self.minusAllowed = nil
     self.decimalPrecision = nil
     self:RemoveTooltip(self.slider)
 end
-method.CalcDecimalPrecision = function(self, step)
+function method:CalcDecimalPrecision(step)
     local start, decimalEnd = tostring(step):find("\.%d+$")
     if start then
         return decimalEnd - start
     end
     return 0
 end
-method.GetValue = function(self)
+function method:GetValue()
     return self.value
 end
-method.SetValue = function(self, value, check, update)
+function method:SetValue(value, check, update)
     value = tonumber(value)
     if not value then
         value = self.min

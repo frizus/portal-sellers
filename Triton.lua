@@ -42,7 +42,7 @@ end
 -- AceConfigRegistry-3.0 валидация
 function addon:PLAYER_LOGIN()
 	if DB.showStartMessage then
-		print(string.format(L["welcome_message"], addonName, GetAddOnMetadata(addonName, "Version")))
+		print(L["welcome_message"])
 	end
 	self.DB:ConvertFilterGroups()
 	self:RegisterEvent("PLAYER_LOGOUT", self.DB)
@@ -103,7 +103,7 @@ function addon:PLAYER_LOGIN()
 		if filterGroupKey then
 			--parser:RemoveDupes()
 			local channel = math.random(1,2) == 2 and "SAY" or (math.random(1,2) == 2 and "YELL" or math.random(1,4))
-			addon.Message:TrackIt(channel, parser, filterGroupKey, classMatch, wordGroup, "SHIT", "SHIT", player, race, gender)
+			addon.Message:TrackIt(channel, parser, filterGroupKey, classMatch, wordGroup, "SHIT", "test", player, race, gender)
 		end
 
 		parser:Destroy()
@@ -117,16 +117,11 @@ function SlashCmdList.TRITON()
 end
 
 addon.isBusy = false
-
-function addon.IsNotBusy()
-	return not addon.isBusy
-end
-
 addon.waitTable = {}
 
-function addon:Locked(delayFunc, runFunc, args)
+function addon:LockBusy(runFunc, args)
 	print("|cffff0000LOCKED|r")
-	table.insert(self.waitTable, {delayFunc, runFunc, args})
+	table.insert(self.waitTable, {runFunc, args})
 	if not self.waiting then
 		self.frame:SetScript("OnUpdate", self.WaitRoom)
 		self.waiting = true
@@ -140,17 +135,14 @@ function addon.WaitRoom()
 	local wait
 	local i = 1
 	while i <= waitLen do
+		if addon.isBusy then break end
 		wait = table.remove(addon.waitTable, 1)
-		if wait[1]() then
-			if wait[3] then
-				wait[2](unpack(wait[3]))
-			else
-				wait[2]()
-			end
-			removed = removed + 1
+		if wait[2] then
+			wait[1](unpack(wait[2]))
 		else
-			table.insert(addon.waitTable, wait)
+			wait[1]()
 		end
+		removed = removed + 1
 		i = i + 1
 	end
 	if removed == waitLen then
@@ -267,8 +259,6 @@ function addon:ToggleTrackEvents(status)
 		self:RegisterEvent("CHAT_MSG_SAY", self.Message)
 		self:RegisterEvent("CHAT_MSG_YELL", self.Message)
 		self:RegisterEvent("CHAT_MSG_CHANNEL", self.Message)
-		self:RegisterEvent("CHAT_MSG_SYSTEM", self.Message)
-		self:RegisterEvent("WHO_LIST_UPDATE", self.Message)
 		self:RegisterEvent("CHAT_MSG_WHISPER", self.Message)
 		self.trackEvents = true
 	elseif enable == false then

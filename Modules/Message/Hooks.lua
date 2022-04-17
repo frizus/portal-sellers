@@ -6,7 +6,6 @@ local Table, Tracker = addon.Table, addon.Tracker
 
 Message.trackedMessages = {}
 Message.trackedMessagesLen = 0
-Message.trackItBusy = 0
 Message.changed = false
 
 function Message:CHAT_MSG_SAY(text, playerName, languageName, channelName, playerName2, specialFlags, zoneChannelID, channelIndex, channelBaseName, unused, lineID, guid, bnSenderID, isMobile, isSubtitle, hideSenderInLetterbox, supressRaidIcons)
@@ -27,8 +26,8 @@ function Message:CHAT_MSG_WHISPER(text, playerName, languageName, channelName, p
 end
 
 function Message:Handle(channel, message, playerGuid, playerName)
-    if not addon.IsNotBusy() then
-        addon:Locked(addon.IsNotBusy, self.Handle, {self, channel, message, playerGuid, playerName})
+    if addon.isBusy then
+        addon:LockBusy(self.Handle, {self, channel, message, playerGuid, playerName})
         return
     end
     addon.busy = true
@@ -85,19 +84,22 @@ function Message:TrackIt(channel, parser, filterGroupKey, classMatch, wordGroup,
         groupId = groupId .. wordGroup
     end
 
-    local messageKey, messageValue
+    local messageKey, messageValue, messageUnescaped
     if not DB.highlightKeywords then
         messageKey = parser:GetFormattedMessage(false)
         messageValue = messageKey
+        messageUnescaped = parser:GetUnescapedMessage(false)
     else
         messageKey = parser:GetFormattedMessage(false)
         messageValue = parser:GetFormattedMessage(true)
+        messageUnescaped = parser:GetUnescapedMessage(true)
     end
     if self.trackedMessages[groupId] then
         local group = self.trackedMessages[groupId]
-        self:MarkChanged("update", group["message"] ~= messageValue and groupId or nil)
-        self:AddVariant(group, channel, messageKey, messageValue)
+        self:MarkChanged("update", (group["message"] ~= messageValue or group["channel"] ~= channel) and groupId or nil)
+        self:AddVariant(group, channel, messageKey, messageValue, messageUnescaped)
     else
+        playerInfo["guid"] = playerGuid
         playerInfo["nameRealm"] = playerName
         playerInfo["raceIcon"] = strupper(race) .. (gender == 3 and "_FEMALE" or "_MALE")
         local group = {
@@ -114,30 +116,32 @@ function Message:TrackIt(channel, parser, filterGroupKey, classMatch, wordGroup,
             group["variantsLen"] = 0
             group["variantsSorted"] = false
         end
-        self:AddVariant(group, channel, messageKey, messageValue)
+        self:AddVariant(group, channel, messageKey, messageValue, messageUnescaped)
         self:MarkChanged("add", groupId)
         self.trackedMessages[groupId] = group
         self.trackedMessagesLen = self.trackedMessagesLen + 1
-        addon.busy = false
-        Tracker:ToggleTimer()
-        addon.busy = true
+        Tracker:ToggleTimer(true)
     end
 end
 
 function Message:Outdated()
     local now = GetTime()
     local haveWho = {}
+    local haveWhoLen = 0
     local removedMessages = 0
     for groupId, message in pairs(self.trackedMessages) do
-        local removeMessage
+        local removeMessage, updateMessage
         if not DB.trackerHideSimilarMessages then
             local removedVariants = 0
             for id, variant in pairs(message["variants"]) do
                 local removedChannels = 0
+                local leftChannel
                 for channelName, channel in pairs(variant["channels"]) do
                     if (now - channel["updated"]) > DB.trackedMessageLifetime then
                         variant["channels"][channelName] = nil
                         removedChannels = removedChannels + 1
+                    elseif not leftChannel then
+                        leftChannel = channelName
                     end
                 end
 
@@ -145,12 +149,15 @@ function Message:Outdated()
                     removedVariants = removedVariants + 1
                     message["variants"][id] = nil
                 elseif removedChannels > 0 then
+                    variant["channelsLen"] = variant["channelsLen"] - removedChannels
                     if variant["channelsSorted"] then
-                        for i = variant["channelsLen"], variant["channelsLen"] - removedChannels + 1, -1 do
-                            variant["channelsOrder"][i] = nil
+                        if variant["channelsLen"] == 1 then
+                            variant["channelsOrder"] = {leftChannel}
+                        else
+                            variant["channelsSorted"] = false
                         end
                     end
-                    variant["channelsLen"] = variant["channelsLen"] - removedChannels
+                    if not updateMessage then updateMessage = true end
                 end
             end
 
@@ -163,6 +170,7 @@ function Message:Outdated()
                     end
                 end
                 message["variantsLen"] = message["variantsLen"] - removedVariants
+                if not updateMessage then updateMessage = true end
             end
         else
             if (now - message["updated"]) > DB.trackedMessageLifetime then
@@ -176,27 +184,34 @@ function Message:Outdated()
             self.trackedMessages[groupId] = nil
             removedMessages = removedMessages + 1
         else
---            tprint(message)
-            if not haveWho[message["playerInfo"]["name"]] then
+            if updateMessage then
+                self:MarkChanged("update", groupId)
+            end
+            if not haveWho[message["playerInfo"]["name"]] and self.who[message["playerInfo"]["name"]] then
                 haveWho[message["playerInfo"]["name"]] = true
+                haveWhoLen = haveWhoLen + 1
             end
         end
     end
 
     if removedMessages == self.trackedMessagesLen then
         self.trackedMessagesLen = 0
-        if self.whoLen ~= 0 then
-            wipe(self.who)
-            self.whoLen = 0
-        end
-        Tracker:ToggleTimer()
+        Tracker:ToggleTimer(true)
     elseif removedMessages > 0 then
         self.trackedMessagesLen = self.trackedMessagesLen - removedMessages
-        for playerName in pairs(self.who) do
-            if not haveWho[playerName] then
-                self.who[playerName] = nil
-                self.whoLen = self.whoLen - 1
-                haveWho[playerName] = nil
+    end
+
+    if haveWhoLen ~= self.whoLen then
+        if haveWhoLen == 0 then
+            wipe(self.who)
+            self.whoLen = 0
+        else
+            for playerName in pairs(self.who) do
+                if not haveWho[playerName] then
+                    self.who[playerName] = nil
+                    self.whoLen = self.whoLen - 1
+                    haveWho[playerName] = nil
+                end
             end
         end
     end
@@ -213,7 +228,7 @@ function Message:CleanMessages()
     self:UnbindWhoEvents()
 end
 
-function Message:AddVariant(trackedMessage, channelName, messageKey, messageValue)
+function Message:AddVariant(trackedMessage, channelName, messageKey, messageValue, messageUnescaped)
     local updated = GetTime()
     if not DB.trackerHideSimilarMessages then
         if trackedMessage["variantsSorted"] then trackedMessage["variantsSorted"] = false end
@@ -241,6 +256,7 @@ function Message:AddVariant(trackedMessage, channelName, messageKey, messageValu
             variants[messageKey] = {
                 message = messageValue,
                 original = messageKey,
+                unescaped = messageUnescaped,
                 updated = updated,
                 channel = channelName,
                 channelsSorted = false,

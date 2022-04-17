@@ -16,19 +16,18 @@ Locales.lua
 Triton.lua
 
 Misc\Chars.lua
+Misc\Chat.lua
 Misc\Table.lua
 Misc\Widget.lua
-Misc\Mixins\ScrollFrameBasic.lua
-Misc\Mixins\TrackerLineTick.lua
-Misc\Mixins\TrackerList.lua
-Misc\Mixins\WidgetTooltip.lua
 
 DB.lua
 
-Modules\Tracker\Tracker.lua
-Modules\Tracker\Fill.lua
-Modules\Tracker\Timer.lua
-Modules\Tracker\TimerClosed.lua
+Modules\Tracker\Menu.lua
+Modules\Tracker\Menu\Actions.lua
+Modules\Tracker\Menu\CreateItems.lua
+Modules\Tracker\Panel.lua
+Modules\Tracker\Panel\Fill.lua
+Modules\Tracker\Panel\Timer.lua
 
 Modules\Minimap.lua
 
@@ -52,9 +51,17 @@ Modules\Message\Hooks\Who.lua
 
 Modules\Options.lua
 
+Widgets\Common\Tooltip.lua
+Widgets\Menu\MenuLayout.lua
+Widgets\ScrollFrame\Basic.lua
+Widgets\Tracker\List.lua
+Widgets\TrackerLine\MenuSimilars.lua
+Widgets\TrackerLine\Tick.lua
 Widgets\BlizOptionsPanel.lua
 Widgets\Checkbox.lua
 Widgets\Container.lua
+Widgets\Menu.lua
+Widgets\MenuItem.lua
 Widgets\MinimapPin.lua
 Widgets\ScrollFrame.lua
 Widgets\ScrollFrame.lua

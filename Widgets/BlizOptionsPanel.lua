@@ -9,7 +9,7 @@ local function frame_Refresh(self) self.widget:Refresh() end
 local function frame_Default(self) self.widget:Default() end
 
 local method = {}
-method.OnAcquire = function(self, options)
+function method:OnAcquire(options)
     local f = self.frame
     f.name = options.leftPanelName
     if options.parent then
@@ -23,7 +23,7 @@ method.OnAcquire = function(self, options)
     self.childrenConfig = options.children
     self.setHandler = options.setHandler
 end
-method.OnRelease = function(self)
+function method:OnRelease()
     local f = self.frame
     f.name, f.parent = nil, nil
     f.okay, f.cancel, f.refresh, f.default = nil, nil, nil, nil
@@ -37,7 +37,7 @@ method.OnRelease = function(self)
     self:ReleaseTitle()
     self:ReleaseContent()
 end
-method.OnShow = function(self)
+function method:OnShow()
     self.active = true
     self.titleWidget = Widget:Create("Text", {
         parent = self.frame,
@@ -64,7 +64,7 @@ method.OnShow = function(self)
         print("OnShow " .. self.titleText)
     end
 end
-method.OnHide = function(self)
+function method:OnHide()
     self.active = nil
     self:ReleaseTitle()
     self:ReleaseContent()
@@ -72,7 +72,7 @@ method.OnHide = function(self)
         print("OnHide " .. self.titleText)
     end
 end
-method.ProcessInput = function(self, config)
+function method:ProcessInput(config)
     local name = config.param
     if not self.panelInputNames[name] then
         self.panelInputNames[name] = true
@@ -82,7 +82,7 @@ method.ProcessInput = function(self, config)
         end
     end
 end
-method.Okay = function(self)
+function method:Okay()
     if self.setHandler then
         self.setHandler(self)
         return
@@ -102,7 +102,7 @@ method.Okay = function(self)
         print("okay " .. self.titleText)
     end
 end
-method.Cancel = function(self)
+function method:Cancel()
     for param in pairs(self.panelChangedInputs) do
         self.panelChangedInputs[param] = nil
     end
@@ -110,7 +110,7 @@ method.Cancel = function(self)
         print("cancel " .. self.titleText)
     end
 end
-method.Refresh = function(self)
+function method:Refresh()
     if self.active then
         self:SetPanelInputsValues()
     end
@@ -118,7 +118,7 @@ method.Refresh = function(self)
         print("refresh " .. self.titleText)
     end
 end
-method.Default = function(self)
+function method:Default()
     for param in pairs(self.panelInputNames) do
         self.panelChangedInputs[param] = Table:Get(defaultDB, param)
     end
@@ -126,13 +126,13 @@ method.Default = function(self)
         print("default " .. self.titleText)
     end
 end
-method.ReleaseTitle = function(self)
+function method:ReleaseTitle()
     if self.titleWidget then
         self.titleWidget:Release()
         self.titleWidget = nil
     end
 end
-method.ReleaseContent = function(self)
+function method:ReleaseContent()
     if self.contentWidget then
         for key in pairs(self.panelInput) do
             self.panelInput[key] = nil
@@ -141,10 +141,10 @@ method.ReleaseContent = function(self)
         self.contentWidget = nil
     end
 end
-method.GetName = function(self)
+function method:GetName()
     return self.frame.name
 end
-method.BuildChildren = function(self, childrenConfig)
+function method:BuildChildren(childrenConfig)
     local children = {}
     for i = 1, #childrenConfig do
         local config = childrenConfig[i]
@@ -161,7 +161,7 @@ method.BuildChildren = function(self, childrenConfig)
     end
     return children
 end
-method.SetPanelInputsValues = function(self)
+function method:SetPanelInputsValues()
     for param, widget in pairs(self.panelInput) do
         if self.panelChangedInputs[param] ~= nil then
             widget:SetValue(self.panelChangedInputs[param])

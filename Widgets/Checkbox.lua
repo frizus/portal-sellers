@@ -16,7 +16,7 @@ local method = {}
 for name, closure in pairs(WidgetTooltip) do
     method[name] = closure
 end
-method.OnAcquire = function(self, options)
+function method:OnAcquire(options)
     self.frame:SetParent(options.parent)
     self:SetWidth(options.width)
     self:SetHeight(28)
@@ -24,10 +24,10 @@ method.OnAcquire = function(self, options)
     self:SetType(options.type)
     self:InitTooltip(self.frame, options.title, options.tooltip)
 end
-method.GetValue = function(self)
+function method:GetValue()
     return self.value
 end
-method.SetValue = function(self, value)
+function method:SetValue(value)
     self.value = value and true or false
     if self.value then
         self.check:Show()
@@ -36,7 +36,7 @@ method.SetValue = function(self, value)
     end
     self:TriggerEvent("SetValue")
 end
-method.SetType = function(self, type)
+function method:SetType(type)
     local size
     if type == "radio" then
         size = 16

@@ -187,8 +187,8 @@ function Options:Panel(arg)
 end
 
 function Options.OnSetOptions(panel)
-    if not addon.IsNotBusy() then
-        addon:Locked(addon.IsNotBusy, Options.OnSetOptions, {panel})
+    if addon.isBusy then
+        addon:LockBusy(Options.OnSetOptions, {panel})
         return
     end
     addon.busy = true
@@ -248,27 +248,51 @@ function Options.OnSetOptions(panel)
             if not updateOutput then updateOutput = true end
             local wordGroupString, wordGroup, filterGroup
             for _, message in pairs(Message.trackedMessages) do
-                if DB.highlightKeywords then
-                    wordGroupString = message["matchInfo"]["wordGroup"]
-                    if wordGroupString then
-                        wordGroup = FilterGroup.wordGroups[wordGroupString]
-                        if wordGroup["&"] then
-                            local messageParser = MessageParser:Create(message["original"], FilterGroup.haveWithShiftLinks, FilterGroup.haveRemoveShiftLinks, true)
-                            messageParser:Parse()
+                if not DB.trackerHideSimilarMessages then
+                    local messageParser
+                    for variantId, variant in pairs(message["variants"]) do
+                        messageParser = MessageParser:Create(variant["original"], FilterGroup.haveWithShiftLinks, FilterGroup.haveRemoveShiftLinks, true)
+                        messageParser:Parse()
+                        if DB.highlightKeywords then
                             filterGroup = DB.filterGroups[message["matchInfo"]["filterGroupKey"]]
-                            messageParser:Highlight(filterGroup["removeShiftLinks"], wordGroup["&"], nil, filterGroup["wordSearch"])
-                            message["message"] = messageParser:GetFormattedMessage(true)
-                            if not DB.trackerHideSimilarMessages then
-                                message["variants"][message["variantKey"]]["message"] = message["message"]
+                            wordGroupString = message["matchInfo"]["wordGroup"]
+                            if wordGroupString then
+                                wordGroup = FilterGroup.wordGroups[wordGroupString]
+                                if wordGroup["&"] then
+                                    messageParser:Highlight(filterGroup["removeShiftLinks"], wordGroup["&"], nil, filterGroup["wordSearch"])
+                                    variant["message"] = messageParser:GetFormattedMessage(true)
+                                    variant["unescaped"] = messageParser:GetUnescapedMessage(true)
+                                    if variantId == message["variantKey"] then
+                                        message["message"] = variant["message"]
+                                    end
+                                end
                             end
-                            messageParser:Destroy()
-                            messageParser = nil
+                        else
+                            variant["message"] = messageParser:GetFormattedMessage(false)
+                            variant["unescaped"] = messageParser:GetUnescapedMessage(false)
+                            if variantId == message["variantKey"] then
+                                message["message"] = variant["message"]
+                            end
                         end
+                        messageParser:Destroy()
+                        messageParser = nil
                     end
                 else
-                    message["message"] = message["original"]
-                    if not DB.trackerHideSimilarMessages then
-                        message["variants"][message["variantKey"]]["message"] = message["message"]
+                    if DB.highlightKeywords then
+                        local messageParser = MessageParser:Create(message["original"], FilterGroup.haveWithShiftLinks, FilterGroup.haveRemoveShiftLinks, true)
+                        messageParser:Parse()
+                        filterGroup = DB.filterGroups[message["matchInfo"]["filterGroupKey"]]
+                        wordGroupString = message["matchInfo"]["wordGroup"]
+                        if wordGroupString then
+                            wordGroup = FilterGroup.wordGroups[wordGroupString]
+                            if wordGroup["&"] then
+                                message["message"] = messageParser:GetFormattedMessage(true)
+                            end
+                        end
+                        messageParser:Destroy()
+                        messageParser = nil
+                    else
+                        message["message"] = message["original"]
                     end
                 end
             end
@@ -288,7 +312,7 @@ function Options.OnSetOptions(panel)
         end
 
         if updateLayout and DB.trackerWindowOpened then
-            Tracker:Update(updateOutput, updateFontSize)
+            Tracker:UpdateFromOptions(updateOutput, updateFontSize)
         end
     end
     addon.busy = false

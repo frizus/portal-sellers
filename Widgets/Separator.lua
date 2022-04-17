@@ -2,7 +2,7 @@ local addonName, addon = ...
 local Widget = addon.Widget
 
 local method = {}
-method.OnAcquire = function(self, options)
+function method:OnAcquire(options)
     self.frame:SetParent(options.parent)
     self:SetWidth(options.width or "fill")
     self:SetHeight(18)

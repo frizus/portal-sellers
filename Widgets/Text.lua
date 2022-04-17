@@ -2,18 +2,18 @@ local addonName, addon = ...
 local Widget = addon.Widget
 
 local method = {}
-method.OnAcquire = function(self, options)
+function method:OnAcquire(options)
     self:SetParent(options.parent)
     self:SetWidth(options.width or "fill")
     self:SetFontObject(options.font or GameFontHighlightSmall)
     self.fontString:SetText(options.text)
 end
-method.OnRelease = function(self)
+function method:OnRelease()
     if self.fontString:GetText() then
         self.fontString:SetText(nil)
     end
 end
-method.SetFontObject = function(self, font)
+function method:SetFontObject(font)
     local lastFont = self.fontString:GetFontObject()
     if lastFont ~= font then
         self.fontString:SetFontObject(font)
@@ -23,10 +23,11 @@ method.SetFontObject = function(self, font)
         self.fontString:SetFont(font:GetFont())
     end
 end
-method.SetWidth = function(self, value, fill)
+function method:SetWidth(value, fill)
     if fill then
         self.frame:SetWidth(value)
         self.fontString:SetWidth(value)
+        self:SetHeightNotTruncated()
         self.width = "fill"
     else
         if self.width ~= value then
@@ -34,13 +35,28 @@ method.SetWidth = function(self, value, fill)
             if value and value ~= "fill" then
                 self.frame:SetWidth(value)
                 self.fontString:SetWidth(value)
+                self:SetHeightNotTruncated()
             end
         end
     end
 end
-method.SetHeight = function() end
-method.GetHeight = function(self)
+function method:SetHeight(value)
+    if self.height ~= value then
+        self.height = value
+        if value then
+            self.frame:SetHeight(value)
+        end
+    end
+    if value then
+        self.fontString:SetHeight(value)
+    end
+end
+function method:GetHeight()
     return self.fontString:GetStringHeight()
+end
+function method:SetHeightNotTruncated()
+    self.fontString:SetHeight(self.fontString:GetStringHeight() + 2000)
+    self:SetHeight(self.fontString:GetStringHeight())
 end
 
 Widget:RegisterType("Text", function()

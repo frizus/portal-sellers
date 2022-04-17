@@ -4,8 +4,8 @@ local DB = addon.param
 
 function Tracker:Fill()
     if DB.trackerWindowOpened then
-        if not addon.IsNotBusy() then
-            addon:Locked(addon.IsNotBusy, self.Fill, {self})
+        if addon.isBusy then
+            addon:LockBusy(self.Fill, {self})
             return
         end
         addon.busy = true

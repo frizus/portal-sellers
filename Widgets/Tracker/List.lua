@@ -3,7 +3,7 @@ local TrackerList = {}
 addon.TrackerList = TrackerList
 local Widget, Table, DB = addon.Widget, addon.Table, addon.param
 
-TrackerList.ConstructTracker = function(self)
+function TrackerList:ConstructTracker()
     self.linesWidget = Widget:Create("Container", {
         parent = self.frame,
         type = "Container",
@@ -13,10 +13,10 @@ TrackerList.ConstructTracker = function(self)
     self.linesWidget.order = {}
     self.linesWidget:SetPoint("TOPLEFT", self.topArea, "BOTTOMLEFT", 5, -1)
     self.linesWidget:SetPoint("BOTTOMRIGHT", self.frame, "BOTTOMRIGHT", -5, 11)
-    self.childOptions = {parent = self.linesWidget:GetChildrenFrame()}
-    self.fillChildOptions = {parent = self.childOptions["parent"], fill = true}
+    self.childOptions = {parent = self.linesWidget:GetChildrenFrame(), base = self}
+    self.fillChildOptions = {parent = self.childOptions["parent"], base = self.childOptions["base"], fill = true}
 end
-TrackerList.Tick = function(self, changed, messages, fill)
+function TrackerList:Tick(changed, messages)
     local children = self.linesWidget:GetChildren()
     local now = GetTime()
     if not changed then
@@ -29,6 +29,14 @@ TrackerList.Tick = function(self, changed, messages, fill)
         for _, line in pairs(children) do line:Tick(nil, now) end
         self.linesWidget.order = Table:GetSortedKeys(messages, "updated", false)
     else
+        if changed["delete"] then
+            for id in pairs(changed["deleteIds"]) do
+                children[id]:Release()
+                children[id] = nil
+                changed["deleteIds"][id] = nil
+            end
+        end
+
         local update
         for id, message in pairs(messages) do
             if not children[id] then
@@ -43,19 +51,11 @@ TrackerList.Tick = function(self, changed, messages, fill)
             end
         end
 
-        if changed["delete"] then
-            for id in pairs(changed["deleteIds"]) do
-                children[id]:Release()
-                children[id] = nil
-                changed["deleteIds"][id] = nil
-            end
-        end
-
         self.linesWidget.order = Table:GetSortedKeys(messages, "updated", false)
     end
     Widget:Layout(self.linesWidget)
 end
-TrackerList.Fill = function(self, changed, messages)
+function TrackerList:Fill(changed, messages)
     if self.filled then return end
     self.filled = true
     self.linesWidget:ReleaseChildren()
@@ -68,7 +68,7 @@ TrackerList.Fill = function(self, changed, messages)
     self.linesWidget.order = Table:GetSortedKeys(messages, "updated", false)
     Widget:Layout(self.linesWidget)
 end
-TrackerList.Update = function(self, messages, updateOutput, updateFontSize)
+function TrackerList:Update(messages, updateOutput, updateFontSize)
     local children = self.linesWidget:GetChildren()
     for _, line in pairs(children) do
         if updateOutput then line:Tick(true) end
@@ -77,17 +77,17 @@ TrackerList.Update = function(self, messages, updateOutput, updateFontSize)
     self.linesWidget.order = Table:GetSortedKeys(messages, "updated", false)
     Widget:Layout(self.linesWidget)
 end
-TrackerList.CleanLines = function(self)
+function TrackerList:CleanLines()
     self.linesWidget:ReleaseChildren()
     wipe(self.linesWidget.order)
     Widget:Layout(self.linesWidget)
 end
-TrackerList.ReleaseTracker = function(self)
+function TrackerList:ReleaseTracker()
     self.listWidth, self.listHeight = nil, nil
     self.filled = nil
     self:CleanLines()
 end
-TrackerList.SetListWidth = function(self, value, fill)
+function TrackerList:SetListWidth(value, fill)
     if fill then
         self.linesWidget:SetWidth(value)
         self.listWidth = "fill"
@@ -101,7 +101,7 @@ TrackerList.SetListWidth = function(self, value, fill)
         return true
     end
 end
-TrackerList.SetListHeight = function(self, value)
+function TrackerList:SetListHeight(value)
     if self.listHeight ~= value then
         self.listHeight = value
         if value then
@@ -110,7 +110,7 @@ TrackerList.SetListHeight = function(self, value)
         return true
     end
 end
-TrackerList.UpdateListLayout = function(self)
+function TrackerList:UpdateListLayout()
     Widget:Layout(self.linesWidget)
 end
 

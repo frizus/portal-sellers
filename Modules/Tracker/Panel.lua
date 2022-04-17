@@ -1,11 +1,11 @@
 local addonName, addon = ...
 local Tracker = {}
 addon.Tracker = Tracker
-local Widget, DB = addon.Widget, addon.param
+local Widget, DB, TrackerMenu = addon.Widget, addon.param, addon.TrackerMenu
 
 function Tracker:Toggle()
-    if not addon.IsNotBusy() then
-        addon:Locked(addon.IsNotBusy, self.Toggle, {self})
+    if addon.isBusy then
+        addon:LockBusy(self.Toggle, {self})
         return
     end
     if self.widget then
@@ -16,8 +16,8 @@ function Tracker:Toggle()
 end
 
 function Tracker:Show()
-    if not addon.IsNotBusy() then
-        addon:Locked(addon.IsNotBusy, self.Show, {self})
+    if addon.isBusy then
+        addon:LockBusy(self.Show, {self})
         return
     end
     addon.busy = true
@@ -34,33 +34,42 @@ function Tracker:CreateWidget()
     self.widget:AddEventHandler("SettingsOnLeftClick", self)
     self.widget:AddEventHandler("PowerOnLeftClick", self)
     self.widget:AddEventHandler("CloseOnLeftClick", self)
+    self.widget:AddEventHandler("LineOnClick", TrackerMenu)
     self.widget:Show()
 end
 
-function Tracker:Update(updateOutput, updateFontSize)
-    Tracker.widget:Update(addon.Message.trackedMessages, updateOutput, updateFontSize)
-end
-
 function Tracker:Hide()
-    if not addon.IsNotBusy() then
-        addon:Locked(addon.IsNotBusy, self.Hide, {self})
+    if addon.isBusy then
+        addon:LockBusy(self.Hide, {self})
         return
     end
     addon.busy = true
     if not DB.doTrackWhenClosed or not DB.trackerEnabled then
         addon.Message:CleanMessages()
-        self.widget:Release()
-        self.widget = false
-        DB.trackerWindowOpened = false
-        addon:ToggleTrackEvents("trackerWindow")
-    else
-        self.widget:Release()
-        self.widget = false
-        DB.trackerWindowOpened = false
-        addon:ToggleTrackEvents("trackerWindow")
     end
+    self.widget:Release()
+    self.widget = false
+    DB.trackerWindowOpened = false
+    TrackerMenu:ReleaseMenu()
+    addon:ToggleTrackEvents("trackerWindow")
     addon.busy = false
     self:ToggleTimer()
+end
+
+function Tracker:UpdateFromOptions(updateOutput, updateFontSize)
+    Tracker.widget:Update(addon.Message.trackedMessages, updateOutput, updateFontSize)
+    TrackerMenu:MenuUpdate()
+end
+
+function Tracker:Update()
+    addon.Message:Outdated()
+    TrackerMenu:MenuUpdate()
+    if addon.Message.changed then
+        self.widget:Tick(addon.Message.changed, addon.Message.trackedMessages)
+        addon.Message.changed = false
+    else
+        self.widget:Tick()
+    end
 end
 
 function Tracker:SettingsOnLeftClick()
@@ -68,8 +77,8 @@ function Tracker:SettingsOnLeftClick()
 end
 
 function Tracker:PowerOnLeftClick()
-    if not addon.IsNotBusy() then
-        addon:Locked(addon.IsNotBusy, self.PowerOnLeftClick, {self})
+    if addon.isBusy then
+        addon:LockBusy(self.PowerOnLeftClick, {self})
         return
     end
     addon.busy = true

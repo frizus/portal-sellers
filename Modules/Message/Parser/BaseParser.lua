@@ -11,6 +11,8 @@ MessageParser.battleNetTagRedundantEnd = 6
 MessageParser.textureRedundantEnd = 7
 MessageParser.raidTag = 8
 MessageParser.newline = 9
+MessageParser.highlightBegin = 10
+MessageParser.highlightEnd = 11
 
 function MessageParser:BaseParser()
     local c, valid

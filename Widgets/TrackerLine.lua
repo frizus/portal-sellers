@@ -1,41 +1,93 @@
 local addonName, addon = ...
-local Widget, L, DB = addon.Widget, addon.L, addon.param
+local Widget, DB = addon.Widget, addon.param
 
+local function frame_OnUpdate(self)
+    local widget = self.widget
+    local px, py = GetCursorPosition()
+    if px ~= widget.lastMouseX or py ~= widget.lastMouseY then
+        widget.dragging = true
+        widget.baseWidget:TriggerEvent("StartDragging")
+        self:SetScript("OnUpdate", nil)
+    end
+end
 local function frame_OnMouseDown(self, mouseButton)
-
+    local widget = self.widget
+    if mouseButton == "LeftButton" then
+        if not self:GetScript("OnUpdate") then
+            widget.holdingLeftButton = true
+            widget.lastMouseX, widget.lastMouseY = GetCursorPosition()
+            self:SetScript("OnUpdate", frame_OnUpdate)
+        end
+    else
+        widget.baseWidget:TriggerEvent("LineOnClick", widget, mouseButton)
+    end
+end
+local function frame_OnMouseUp(self, mouseButton)
+    local widget = self.widget
+    if widget.holdingLeftButton then
+        self:SetScript("OnUpdate", nil)
+        widget.lastMouseX, widget.lastMouseY = nil, nil
+        widget.holdingLeftButton = false
+        if widget.dragging then
+            widget.baseWidget:TriggerEvent("StopDragging")
+        else
+            widget.baseWidget:TriggerEvent("LineOnClick", widget, mouseButton)
+        end
+        widget.dragging = false
+    end
 end
 
 local function frame_OnHyperlinkClick(self, linkData, link, button)
     SetItemRef(linkData, link, button)
 end
 
+local function frame_OnHyperlinkEnter(self, linkData, link)
+    if IsModifierKeyDown() then
+        ShowUIPanel(ItemRefTooltip)
+        if ( not ItemRefTooltip:IsShown() ) then
+            ItemRefTooltip:SetOwner(UIParent, "ANCHOR_PRESERVE")
+        end
+        ItemRefTooltip:SetHyperlink(linkData)
+    end
+end
+
 local method = {}
 for name, closure in pairs(addon.TrackerLineTick) do
     method[name] = closure
 end
-method.OnAcquire = function(self, options)
+for name, closure in pairs(addon.TrackerMenuSimilars) do
+    method[name] = closure
+end
+function method:OnAcquire(options)
     self:SetParent(options.parent)
     self:UpdateFontSize()
     if options.fill then
         self.blinked = true
     end
+    self.baseWidget = options.base
 end
-method.OnRelease = function(self)
+function method:OnRelease()
     if self.fontString:GetText() then
         self.fontString:SetText(nil)
     end
+    self.holdingLeftButton = nil
+    self.lastMouseX, self.lastMouseY = nil, nil
+    self.dragging = nil
     self.blinked = nil
     self.fontSize = nil
+    self.baseWidget = nil
+    self:ReleaseTick()
+    self:TriggerEvent("OnRelease")
 end
-method.UpdateFontSize = function(self)
+function method:UpdateFontSize()
     local fontSize = DB.trackerFontSize
     if self.fontSize ~= fontSize then
-        local font, _, flags = self.fontString:GetFont()
+        local font, _, flags = DEFAULT_CHAT_FRAME:GetFont()
         self.fontString:SetFont(font, fontSize, flags)
         self.fontSize = fontSize
     end
 end
-method.Blink = function(self)
+function method:Blink()
     if self.blinked then return end
     self.blinked = true
 
@@ -57,20 +109,11 @@ method.Blink = function(self)
         self.blinkAnimation:Play()
     end
 end
-method.SetFontObject = function(self, font)
-    local lastFont = self.fontString:GetFontObject()
-    if lastFont ~= font then
-        self.fontString:SetFontObject(font)
-    end
-    if not self.noCJK or lastFont ~= font then
-        self.noCJK = true
-        self.fontString:SetFont(font:GetFont())
-    end
-end
-method.SetWidth = function(self, value, fill)
+function method:SetWidth(value, fill)
     if fill then
         self.frame:SetWidth(value)
         self.fontString:SetWidth(value)
+        self:SetHeightNotTruncated()
         self.width = "fill"
     else
         if self.width ~= value then
@@ -78,15 +121,30 @@ method.SetWidth = function(self, value, fill)
             if value and value ~= "fill" then
                 self.frame:SetWidth(value)
                 self.fontString:SetWidth(value)
+                self:SetHeightNotTruncated()
             end
         end
     end
 end
-method.SetHeight = function() end
-method.GetHeight = function(self)
+function method:SetHeight(value)
+    if self.height ~= value then
+        self.height = value
+        if value then
+            self.frame:SetHeight(value)
+        end
+    end
+    if value then
+        self.fontString:SetHeight(value)
+    end
+end
+function method:GetHeight()
     return self.fontString:GetStringHeight()
 end
-method.SetText = function(self, text, onlyTime)
+function method:SetHeightNotTruncated()
+    self.fontString:SetHeight(self.fontString:GetStringHeight() + 2000)
+    self:SetHeight(self.fontString:GetStringHeight())
+end
+function method:SetText(text, onlyTime)
     self.fontString:SetText(text)
 end
 
@@ -97,12 +155,12 @@ Widget:RegisterType("TrackerLine", function()
 
     frame:EnableMouse(true)
     frame:SetScript("OnMouseDown", frame_OnMouseDown)
+    frame:SetScript("OnMouseUp", frame_OnMouseUp)
     frame:SetHyperlinksEnabled(true)
+    frame:SetScript("OnHyperlinkEnter", frame_OnHyperlinkEnter)
     frame:SetScript("OnHyperlinkClick", frame_OnHyperlinkClick)
 
-    local fontSize = DB.trackerFontSize
     local fontString = frame:CreateFontString()
-    fontString:SetFont(DEFAULT_CHAT_FRAME:GetFont(), fontSize)
     fontString:SetJustifyH("LEFT")
     fontString:SetJustifyV("TOP")
     fontString:SetNonSpaceWrap(true)
@@ -112,7 +170,6 @@ Widget:RegisterType("TrackerLine", function()
     local widget = {
         frame = frame,
         fontString = fontString,
-        fontSize = fontSize,
     }
     for name, closure in pairs(method) do
         widget[name] = closure

@@ -62,7 +62,7 @@ function MessageParser:ParseRaidTag()
     end
 
     local match = false
-    raidTag = strlower(raidTag)
+    raidTag = string.utf8lower(raidTag)
     for _, matchingTag in pairs(raidTagsGroupedByLen[len]) do
         if raidTag == matchingTag then
             match = true

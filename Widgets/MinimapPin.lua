@@ -85,37 +85,41 @@ local method = {}
 for name, closure in pairs(WidgetTooltip) do
     method[name] = closure
 end
-method.OnAcquire = function(self, options)
+function method:OnAcquire(options)
     self:SetParent(_G["Minimap"])
     self:TogglePinFocus(false)
     self:UpdatePosition()
     self:InitTooltip(self.frame, button_ShowTooltip)
 end
-method.OnRelease = function(self)
+function method:OnRelease()
     self.isDragging = nil
     self.lastMouseX = nil
     self.lastMouseY = nil
     self:RemoveTooltip(self.frame)
 end
-method.SetParent = function(self, parent)
+function method:Show()
+    local f = self.frame
+    f:SetFrameStrata("MEDIUM")
+    f:SetFrameLevel(8)
+    f:Show()
+end
+function method:SetParent(parent)
     if parent then
-        local frame = self.frame
-        if frame:GetParent() ~= parent then
-            frame:SetParent(nil)
-            frame:SetParent(parent)
-            frame:SetFrameStrata("MEDIUM")
-            frame:SetFrameLevel(8)
+        local f = self.frame
+        if f:GetParent() ~= parent then
+            f:SetParent(nil)
+            f:SetParent(parent)
         end
     end
 end
-method.TogglePinFocus = function(self, focus)
+function method:TogglePinFocus(focus)
     if focus then
         self.icon:SetTexCoord(0.05, 0.95, 0.05, 0.95)
     else
         self.icon:SetTexCoord(0, 1, 0, 1)
     end
 end
-method.UpdatePosition = function(self, newPosition)
+function method:UpdatePosition(newPosition)
     if newPosition then
         DB.minimap.minimapPos = newPosition
     end
@@ -149,6 +153,8 @@ end
 Widget:RegisterType("MinimapPin", function()
     local button = CreateFrame("Button", nil, UIParent)
     button:Hide()
+    button:SetFrameStrata("MEDIUM")
+    button:SetFrameLevel(8)
 
     button:SetSize(31, 31)
     button:RegisterForClicks("anyUp")
